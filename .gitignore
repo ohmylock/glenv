@@ -1,0 +1,13 @@
+
+# ralphex progress logs
+progress*.txt
+
+# build artifacts
+.bin/
+bin/
+dist/
+
+# project artifacts
+coverage.out
+*.env
+.glenv.yml

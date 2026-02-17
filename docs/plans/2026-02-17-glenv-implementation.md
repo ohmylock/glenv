@@ -43,14 +43,14 @@ complexity: Simple
 - Create: stub `doc.go` files in each package directory
 
 **Steps:**
-- [ ] Create directory structure: `cmd/glenv/`, `pkg/{config,gitlab,envfile,classifier,sync}/`, `.github/workflows/`
-- [ ] Create `go.mod` with module `github.com/ohmylock/glenv`, Go 1.25, and all dependencies
-- [ ] Run `go mod tidy` to generate `go.sum`
-- [ ] Create `Makefile` with targets: build, test, lint, install, release, release-check, clean. Use LDFLAGS with `-X main.version=$(VERSION)`
-- [ ] Create `.gitignore` excluding: `.bin/`, `dist/`, `coverage.out`, `*.env`, `.glenv.yml`
-- [ ] Create `LICENSE` (MIT)
-- [ ] Create stub `doc.go` in each package with `package <name>` declaration
-- [ ] Verify: `go build ./...` compiles without errors
+- [x] Create directory structure: `cmd/glenv/`, `pkg/{config,gitlab,envfile,classifier,sync}/`, `.github/workflows/`
+- [x] Create `go.mod` with module `github.com/ohmylock/glenv`, Go 1.25, and all dependencies
+- [x] Run `go mod tidy` to generate `go.sum`
+- [x] Create `Makefile` with targets: build, test, lint, install, release, release-check, clean. Use LDFLAGS with `-X main.version=$(VERSION)`
+- [x] Create `.gitignore` excluding: `.bin/`, `dist/`, `coverage.out`, `*.env`, `.glenv.yml`
+- [x] Create `LICENSE` (MIT)
+- [x] Create stub `doc.go` in each package with `package <name>` declaration
+- [x] Verify: `go build ./...` compiles without errors
 
 ---
 
