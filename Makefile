@@ -19,7 +19,7 @@ release:
 	goreleaser release --clean
 
 release-check:
-	goreleaser release --clean --skip=publish
+	goreleaser release --snapshot --clean --skip=publish
 
 clean:
 	rm -rf bin/ dist/ coverage.out

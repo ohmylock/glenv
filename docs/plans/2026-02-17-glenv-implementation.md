@@ -417,20 +417,20 @@ complexity: Simple
 - Create: `.github/workflows/release.yml`
 
 **Steps:**
-- [ ] Create `.goreleaser.yml`:
+- [x] Create `.goreleaser.yml`:
   - Cross-compile: linux/darwin/windows × amd64/arm64
   - CGO_ENABLED=0, ldflags with version
   - Archives: tar.gz (unix), zip (windows)
   - Checksums
-- [ ] Create `.github/workflows/ci.yml`:
+- [x] Create `.github/workflows/ci.yml`:
   - Trigger: push/PR to main
   - Jobs: go test -race, go vet, golangci-lint
   - Go version matrix: [1.25]
-- [ ] Create `.github/workflows/release.yml`:
+- [x] Create `.github/workflows/release.yml`:
   - Trigger: push tag `v*`
   - Job: goreleaser release --clean
   - GITHUB_TOKEN secret
-- [ ] Verify: `make release-check` (goreleaser dry-run) passes
+- [x] Verify: `make release-check` (goreleaser dry-run) passes
 
 ---
 
