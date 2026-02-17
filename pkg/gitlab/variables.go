@@ -69,17 +69,19 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 		if err != nil {
 			return nil, fmt.Errorf("gitlab: list variables: %w", err)
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
 			return nil, fmt.Errorf("gitlab: list variables: unexpected status %d", resp.StatusCode)
 		}
 
-		var page_vars []Variable
-		if err := json.NewDecoder(resp.Body).Decode(&page_vars); err != nil {
-			return nil, fmt.Errorf("gitlab: list variables: decode: %w", err)
+		var pageVars []Variable
+		decodeErr := json.NewDecoder(resp.Body).Decode(&pageVars)
+		resp.Body.Close()
+		if decodeErr != nil {
+			return nil, fmt.Errorf("gitlab: list variables: decode: %w", decodeErr)
 		}
-		all = append(all, page_vars...)
+		all = append(all, pageVars...)
 
 		nextPage := resp.Header.Get("X-Next-Page")
 		if nextPage == "" || nextPage == "0" {

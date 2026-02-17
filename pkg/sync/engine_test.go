@@ -141,8 +141,9 @@ func TestApply_DryRun(t *testing.T) {
 
 	report := engine.Apply(context.Background(), diff)
 
-	// Dry-run: no API calls, but counts are still reported.
+	// Dry-run: no API calls, but create/update/delete counts are still reported.
 	assert.Equal(t, int32(0), fake.calls.Load(), "dry-run must not make API calls")
+	assert.Equal(t, 0, report.APICalls, "dry-run must report 0 API calls")
 	assert.Equal(t, 1, report.Created)
 	assert.Equal(t, 1, report.Updated)
 	assert.Equal(t, 1, report.Deleted)

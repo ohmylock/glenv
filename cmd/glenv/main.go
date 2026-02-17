@@ -59,6 +59,7 @@ type SyncCommand struct {
 }
 
 func (cmd *SyncCommand) Execute(args []string) error {
+	setupColor(cmd.global.NoColor)
 	cfg, client, err := buildClientFromGlobal(cmd.global)
 	if err != nil {
 		return err
@@ -112,6 +113,7 @@ type DiffCommand struct {
 }
 
 func (cmd *DiffCommand) Execute(args []string) error {
+	setupColor(cmd.global.NoColor)
 	cfg, client, err := buildClientFromGlobal(cmd.global)
 	if err != nil {
 		return err
@@ -146,6 +148,7 @@ type ListCommand struct {
 }
 
 func (cmd *ListCommand) Execute(args []string) error {
+	setupColor(cmd.global.NoColor)
 	cfg, client, err := buildClientFromGlobal(cmd.global)
 	if err != nil {
 		return err
@@ -182,6 +185,7 @@ type ExportCommand struct {
 }
 
 func (cmd *ExportCommand) Execute(args []string) error {
+	setupColor(cmd.global.NoColor)
 	cfg, client, err := buildClientFromGlobal(cmd.global)
 	if err != nil {
 		return err
@@ -192,14 +196,19 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		return fmt.Errorf("list variables: %w", err)
 	}
 
-	out := os.Stdout
 	if cmd.Output != "" {
 		f, err := os.Create(cmd.Output)
 		if err != nil {
 			return fmt.Errorf("create output file: %w", err)
 		}
-		defer f.Close()
-		out = f
+		for _, v := range vars {
+			val := v.Value
+			if strings.ContainsAny(val, " \t\n\"'") {
+				val = fmt.Sprintf("%q", val)
+			}
+			fmt.Fprintf(f, "%s=%s\n", v.Key, val)
+		}
+		return f.Close()
 	}
 
 	for _, v := range vars {
@@ -207,7 +216,7 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		if strings.ContainsAny(val, " \t\n\"'") {
 			val = fmt.Sprintf("%q", val)
 		}
-		fmt.Fprintf(out, "%s=%s\n", v.Key, val)
+		fmt.Fprintf(os.Stdout, "%s=%s\n", v.Key, val)
 	}
 	return nil
 }
@@ -220,6 +229,7 @@ type DeleteCommand struct {
 }
 
 func (cmd *DeleteCommand) Execute(args []string) error {
+	setupColor(cmd.global.NoColor)
 	if len(args) == 0 {
 		return fmt.Errorf("usage: glenv delete [KEY...]")
 	}
@@ -438,6 +448,4 @@ func main() {
 		}
 		os.Exit(1)
 	}
-
-	setupColor(global.NoColor)
 }

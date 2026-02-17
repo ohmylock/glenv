@@ -229,13 +229,19 @@ func (e *Engine) ApplyWithCallback(ctx context.Context, diff DiffResult, cb func
 		switch r.Change.Kind {
 		case ChangeCreate:
 			report.Created++
-			report.APICalls++
+			if !e.opts.DryRun {
+				report.APICalls++
+			}
 		case ChangeUpdate:
 			report.Updated++
-			report.APICalls++
+			if !e.opts.DryRun {
+				report.APICalls++
+			}
 		case ChangeDelete:
 			report.Deleted++
-			report.APICalls++
+			if !e.opts.DryRun {
+				report.APICalls++
+			}
 		case ChangeUnchanged:
 			report.Unchanged++
 		case ChangeSkipped:

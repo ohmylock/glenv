@@ -12,10 +12,10 @@ import (
 type SkipReason int
 
 const (
-	SkipBlank         SkipReason = iota + 1
-	SkipComment       SkipReason = iota
-	SkipPlaceholder   SkipReason = iota
-	SkipInterpolation SkipReason = iota
+	SkipBlank         SkipReason = iota + 1 // 1
+	SkipComment                              // 2
+	SkipPlaceholder                          // 3
+	SkipInterpolation                        // 4
 )
 
 // Variable holds a parsed environment variable.
@@ -87,6 +87,8 @@ func ParseFile(path string) (*ParseResult, error) {
 func ParseReader(r io.Reader) (*ParseResult, error) {
 	result := &ParseResult{}
 	scanner := bufio.NewScanner(r)
+	// Increase buffer to 1 MB to handle large values (certificates, base64 blobs).
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
 
 	lineNum := 0
 
@@ -138,24 +140,20 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 				// Multiline: accumulate lines until closing "
 				var sb strings.Builder
 				sb.WriteString(inner)
-				found := false
 				for scanner.Scan() {
 					lineNum++
 					nextLine := scanner.Text()
 					closeIdx = strings.IndexByte(nextLine, '"')
 					if closeIdx >= 0 {
-						// Closing quote found
+						// Closing quote found.
 						sb.WriteByte('\n')
 						sb.WriteString(nextLine[:closeIdx])
-						found = true
 						break
 					}
 					sb.WriteByte('\n')
 					sb.WriteString(nextLine)
 				}
-				if !found {
-					// EOF without closing quote; take what we have
-				}
+				// If scanner reached EOF without a closing quote, use whatever was accumulated.
 				value = sb.String()
 			} else {
 				// Single-quoted multiline not supported; treat remainder as value
