@@ -77,7 +77,7 @@ complexity: Medium
 **Public API:** `ParseFile(path string) (*ParseResult, error)`, `ParseReader(r io.Reader) (*ParseResult, error)`
 
 **Steps:**
-- [ ] Write table-driven tests for all cases:
+- [x] Write table-driven tests for all cases:
   - Simple `KEY=VALUE` (unquoted)
   - Double-quoted: `KEY="value with spaces"`
   - Single-quoted: `KEY='value'`
@@ -89,15 +89,15 @@ complexity: Medium
   - Multiline (PEM block in double quotes spanning lines)
   - Value containing `#` (not inline comment — kept as value)
   - Full file integration test with temp file
-- [ ] Implement `ParseReader()` with `bufio.Scanner`:
+- [x] Implement `ParseReader()` with `bufio.Scanner`:
   - Skip blank lines and `#` comments
   - Split on first `=`
   - Detect opening quote, enter multiline mode if unbalanced
   - Strip outer quotes
   - Check placeholder patterns (case-insensitive)
   - Check interpolation (`${`)
-- [ ] Implement `ParseFile()` as wrapper opening file and calling `ParseReader()`
-- [ ] Run `go test -race ./pkg/envfile/` — all tests pass
+- [x] Implement `ParseFile()` as wrapper opening file and calling `ParseReader()`
+- [x] Run `go test -race ./pkg/envfile/` — all tests pass
 
 ---
 
