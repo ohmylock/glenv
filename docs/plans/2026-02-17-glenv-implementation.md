@@ -272,7 +272,7 @@ complexity: Medium
 - All support `filter[environment_scope]`
 
 **Steps:**
-- [ ] Write tests with mock server:
+- [x] Write tests with mock server:
   - `TestListVariables_SinglePage` — 3 vars, no X-Next-Page
   - `TestListVariables_MultiPage` — page 1 has X-Next-Page, page 2 empty
   - `TestListVariables_EnvScope` — verify filter query param
@@ -280,12 +280,12 @@ complexity: Medium
   - `TestUpdateVariable` — PUT to correct URL
   - `TestDeleteVariable` — DELETE returns 204
   - `TestGetVariable_NotFound` — 404 returns nil, nil
-- [ ] Implement `ListVariables(ctx, projectID, opts) ([]Variable, error)` with pagination loop
-- [ ] Implement `GetVariable(ctx, projectID, key, envScope) (*Variable, error)`
-- [ ] Implement `CreateVariable(ctx, projectID, req) (*Variable, error)`
-- [ ] Implement `UpdateVariable(ctx, projectID, req) (*Variable, error)`
-- [ ] Implement `DeleteVariable(ctx, projectID, key, envScope) error`
-- [ ] Run `go test -race ./pkg/gitlab/` — all tests pass
+- [x] Implement `ListVariables(ctx, projectID, opts) ([]Variable, error)` with pagination loop
+- [x] Implement `GetVariable(ctx, projectID, key, envScope) (*Variable, error)`
+- [x] Implement `CreateVariable(ctx, projectID, req) (*Variable, error)`
+- [x] Implement `UpdateVariable(ctx, projectID, req) (*Variable, error)`
+- [x] Implement `DeleteVariable(ctx, projectID, key, envScope) error`
+- [x] Run `go test -race ./pkg/gitlab/` — all tests pass
 
 ---
 
