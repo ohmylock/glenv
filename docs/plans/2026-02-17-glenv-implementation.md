@@ -317,7 +317,7 @@ complexity: Large
 - `ApplyWithCallback(ctx, diff, cb func(Result)) SyncReport` for streaming output
 
 **Steps:**
-- [ ] Write tests:
+- [x] Write tests:
   - `TestDiff_CreateNew` — local var not in remote → ChangeCreate
   - `TestDiff_UpdateChanged` — same key, different value → ChangeUpdate
   - `TestDiff_Unchanged` — same key, same value → ChangeUnchanged
@@ -327,12 +327,12 @@ complexity: Large
   - `TestApply_Concurrent` — 20 tasks, 5 workers, no race (with `-race`)
   - `TestApply_ContextCancel` — cancel mid-apply → partial report
   - `TestApply_ErrorHandling` — one API fails → Failed=1, others succeed
-- [ ] Implement `NewEngine(client, classifier, opts, projectID)`
-- [ ] Implement `Diff(ctx, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult`
-- [ ] Implement `Apply(ctx, diff) SyncReport` with worker pool
-- [ ] Implement `ApplyWithCallback(ctx, diff, cb func(Result)) SyncReport`
-- [ ] Implement `applyOne(ctx, task Change) Result` — routes to Create/Update/Delete
-- [ ] Run `go test -race ./pkg/sync/` — all tests pass
+- [x] Implement `NewEngine(client, classifier, opts, projectID)`
+- [x] Implement `Diff(ctx, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult`
+- [x] Implement `Apply(ctx, diff) SyncReport` with worker pool
+- [x] Implement `ApplyWithCallback(ctx, diff, cb func(Result)) SyncReport`
+- [x] Implement `applyOne(ctx, task Change) Result` — routes to Create/Update/Delete
+- [x] Run `go test -race ./pkg/sync/` — all tests pass
 
 ---
 
