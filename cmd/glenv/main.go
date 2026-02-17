@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -31,7 +32,7 @@ type GlobalOptions struct {
 	Config    string  `short:"c" long:"config" description:"Path to .glenv.yml config file"`
 	Token     string  `long:"token" env:"GITLAB_TOKEN" description:"GitLab private token"`
 	Project   string  `long:"project" env:"GITLAB_PROJECT_ID" description:"GitLab project ID"`
-	URL       string  `long:"url" env:"GITLAB_URL" description:"GitLab base URL" default:"https://gitlab.com"`
+	URL       string  `long:"url" env:"GITLAB_URL" description:"GitLab base URL"`
 	DryRun    bool    `long:"dry-run" description:"Print planned changes without applying them"`
 	Debug     bool    `long:"debug" description:"Enable debug output"`
 	NoColor   bool    `long:"no-color" description:"Disable colored output"`
@@ -196,19 +197,14 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		return fmt.Errorf("list variables: %w", err)
 	}
 
+	out := io.Writer(os.Stdout)
 	if cmd.Output != "" {
 		f, err := os.Create(cmd.Output)
 		if err != nil {
 			return fmt.Errorf("create output file: %w", err)
 		}
-		for _, v := range vars {
-			val := v.Value
-			if strings.ContainsAny(val, " \t\n\"'") {
-				val = fmt.Sprintf("%q", val)
-			}
-			fmt.Fprintf(f, "%s=%s\n", v.Key, val)
-		}
-		return f.Close()
+		defer f.Close()
+		out = f
 	}
 
 	for _, v := range vars {
@@ -216,7 +212,9 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		if strings.ContainsAny(val, " \t\n\"'") {
 			val = fmt.Sprintf("%q", val)
 		}
-		fmt.Fprintf(os.Stdout, "%s=%s\n", v.Key, val)
+		if _, err := fmt.Fprintf(out, "%s=%s\n", v.Key, val); err != nil {
+			return fmt.Errorf("write variable %s: %w", v.Key, err)
+		}
 	}
 	return nil
 }
@@ -278,7 +276,7 @@ func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Clien
 	if global.Project != "" {
 		cfg.GitLab.ProjectID = global.Project
 	}
-	if global.URL != "" && global.URL != "https://gitlab.com" {
+	if global.URL != "" {
 		cfg.GitLab.URL = global.URL
 	}
 
@@ -314,7 +312,7 @@ func buildClassifier(cfg *config.Config, noAutoClassify bool) *classifier.Classi
 }
 
 func setupColor(noColor bool) {
-	if noColor {
+	if noColor || os.Getenv("NO_COLOR") != "" {
 		color.NoColor = true
 	}
 }

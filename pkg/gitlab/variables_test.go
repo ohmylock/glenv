@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,11 +46,11 @@ func TestListVariables_MultiPage(t *testing.T) {
 		{Key: "VAR3", Value: "v3", VariableType: "env_var", EnvironmentScope: "*"},
 	}
 
-	callCount := 0
+	var callCount atomic.Int32
 	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
-		callCount++
+		count := callCount.Add(1)
 		w.Header().Set("Content-Type", "application/json")
-		if callCount == 1 {
+		if count == 1 {
 			w.Header().Set("X-Next-Page", "2")
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(page1)
@@ -66,7 +67,7 @@ func TestListVariables_MultiPage(t *testing.T) {
 	assert.Equal(t, "VAR1", result[0].Key)
 	assert.Equal(t, "VAR2", result[1].Key)
 	assert.Equal(t, "VAR3", result[2].Key)
-	assert.Equal(t, 2, callCount)
+	assert.Equal(t, int32(2), callCount.Load())
 }
 
 func TestListVariables_EnvScope(t *testing.T) {
