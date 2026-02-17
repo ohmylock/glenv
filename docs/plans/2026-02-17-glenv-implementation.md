@@ -133,7 +133,7 @@ complexity: Medium
 - file = key matches file patterns OR value contains PEM header
 
 **Steps:**
-- [ ] Write table-driven tests:
+- [x] Write table-driven tests:
   - `API_KEY` + long value → masked=true
   - `API_KEY` + short value → masked=false
   - `MAX_TOKENS` + long value → masked=false (excluded)
@@ -145,10 +145,10 @@ complexity: Medium
   - Value with `-----BEGIN` → type=file
   - Multiline value for TOKEN → masked=false
   - Custom user rules merged with built-in
-- [ ] Implement `New(userRules Rules) *Classifier` with rule merging
-- [ ] Implement `Classify(key, value, environment string) Classification`
-- [ ] Implement `matchesMasked(key)` and `matchesFile(key, value)` with exclude-first logic
-- [ ] Run `go test -race ./pkg/classifier/` — all tests pass
+- [x] Implement `New(userRules Rules) *Classifier` with rule merging
+- [x] Implement `Classify(key, value, environment string) Classification`
+- [x] Implement `matchesMasked(key)` and `matchesFile(key, value)` with exclude-first logic
+- [x] Run `go test -race ./pkg/classifier/` — all tests pass
 
 ---
 
