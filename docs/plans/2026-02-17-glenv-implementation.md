@@ -181,7 +181,7 @@ complexity: Medium
 **Env vars:** `GITLAB_TOKEN`, `GITLAB_PROJECT_ID`, `GITLAB_URL`
 
 **Steps:**
-- [ ] Write tests:
+- [x] Write tests:
   - `TestLoad_Defaults` — no config, no env → verify defaults
   - `TestLoad_EnvVars` — set env vars → verify override
   - `TestLoad_ConfigFile` — temp YAML file → verify loaded
@@ -190,13 +190,13 @@ complexity: Medium
   - `TestValidate_MissingToken` → error
   - `TestValidate_MissingProject` → error
   - `TestResolveConfigPath` — local `.glenv.yml` found first
-- [ ] Implement `defaults() Config`
-- [ ] Implement `applyEnvVars(cfg)` — overlay from `GITLAB_*` env vars
-- [ ] Implement `resolveConfigPath(override string)` — search chain
-- [ ] Implement `expandEnvVars(cfg)` — `os.ExpandEnv` on string fields
-- [ ] Implement `Load(configPath string) (*Config, error)` — defaults → env → YAML → expand
-- [ ] Implement `Validate() error` — require token and project_id
-- [ ] Run `go test -race ./pkg/config/` — all tests pass
+- [x] Implement `defaults() Config`
+- [x] Implement `applyEnvVars(cfg)` — overlay from `GITLAB_*` env vars
+- [x] Implement `resolveConfigPath(override string)` — search chain
+- [x] Implement `expandEnvVars(cfg)` — `os.ExpandEnv` on string fields
+- [x] Implement `Load(configPath string) (*Config, error)` — defaults → env → YAML → expand
+- [x] Implement `Validate() error` — require token and project_id
+- [x] Run `go test -race ./pkg/config/` — all tests pass
 
 ---
 
