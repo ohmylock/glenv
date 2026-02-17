@@ -131,19 +131,30 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 			quote := rawValue[0]
 			inner := rawValue[1:]
 
-			// Check if the closing quote is on the same line
-			closeIdx := strings.IndexByte(inner, quote)
+			// Check if the closing quote is on the same line.
+			// For double-quoted values, skip escaped quotes.
+			var closeIdx int
+			if quote == '"' {
+				closeIdx = findUnescapedQuote(inner)
+			} else {
+				closeIdx = strings.IndexByte(inner, quote)
+			}
 			if closeIdx >= 0 {
-				// Single-line quoted value
-				value = inner[:closeIdx]
+				// Single-line quoted value.
+				raw := inner[:closeIdx]
+				if quote == '"' {
+					value = unescapeDoubleQuoted(raw)
+				} else {
+					value = raw
+				}
 			} else if quote == '"' {
-				// Multiline: accumulate lines until closing "
+				// Multiline: accumulate lines until an unescaped closing "
 				var sb strings.Builder
 				sb.WriteString(inner)
 				for scanner.Scan() {
 					lineNum++
 					nextLine := scanner.Text()
-					closeIdx = strings.IndexByte(nextLine, '"')
+					closeIdx = findUnescapedQuote(nextLine)
 					if closeIdx >= 0 {
 						// Closing quote found.
 						sb.WriteByte('\n')
@@ -154,7 +165,7 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 					sb.WriteString(nextLine)
 				}
 				// If scanner reached EOF without a closing quote, use whatever was accumulated.
-				value = sb.String()
+				value = unescapeDoubleQuoted(sb.String())
 			} else {
 				// Single-quoted multiline not supported; treat remainder as value
 				value = inner
@@ -187,4 +198,28 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 	}
 
 	return result, nil
+}
+
+// findUnescapedQuote returns the index of the first unescaped double-quote in s,
+// or -1 if none is found. A quote preceded by a backslash is considered escaped.
+func findUnescapedQuote(s string) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == '"' {
+			// Count consecutive preceding backslashes.
+			backslashes := 0
+			for j := i - 1; j >= 0 && s[j] == '\\'; j-- {
+				backslashes++
+			}
+			if backslashes%2 == 0 {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// unescapeDoubleQuoted processes escape sequences inside a double-quoted value:
+// \\ → \ and \" → "
+func unescapeDoubleQuoted(s string) string {
+	return strings.NewReplacer(`\\`, `\`, `\"`, `"`).Replace(s)
 }

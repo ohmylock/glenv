@@ -164,7 +164,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 					Kind:     ChangeDelete,
 					Key:      rv.Key,
 					OldValue: rv.Value,
-					envScope: envScope,
+					envScope: rv.EnvironmentScope,
 				})
 			}
 		}

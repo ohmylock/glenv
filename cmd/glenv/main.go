@@ -411,8 +411,8 @@ func printDiff(diff glsync.DiffResult) {
 
 func printSyncReport(report glsync.SyncReport) {
 	fmt.Println()
-	fmt.Printf("Created: %d | Updated: %d | Unchanged: %d | Skipped: %d | Failed: %d\n",
-		report.Created, report.Updated, report.Unchanged, report.Skipped, report.Failed)
+	fmt.Printf("Created: %d | Updated: %d | Deleted: %d | Unchanged: %d | Skipped: %d | Failed: %d\n",
+		report.Created, report.Updated, report.Deleted, report.Unchanged, report.Skipped, report.Failed)
 
 	dur := report.Duration.Round(time.Millisecond)
 	rate := 0.0
