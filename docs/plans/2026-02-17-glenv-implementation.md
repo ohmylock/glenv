@@ -227,20 +227,20 @@ complexity: Large
 - Request body cloning for retries (buffer body before first attempt)
 
 **Steps:**
-- [ ] Write mock HTTP server test helper: `setupMockServer(t, handler) (*httptest.Server, *Client)`
-- [ ] Write tests:
+- [x] Write mock HTTP server test helper: `setupMockServer(t, handler) (*httptest.Server, *Client)`
+- [x] Write tests:
   - `TestDo_AuthHeader` — verify PRIVATE-TOKEN header sent
   - `TestDo_RateLimiting` — verify rate limiter is called
   - `TestDo_Retry_NetworkError` — mock drops connection → 3 retries
   - `TestDo_Retry_429_RetryAfter` — mock returns 429 + Retry-After → wait and retry
   - `TestDo_401_NoRetry` — mock returns 401 → immediate error, no retry
   - `TestDo_Success` — 200 response → returned correctly
-- [ ] Implement `NewClient(cfg ClientConfig) *Client`
-- [ ] Implement `do(ctx, req) (*http.Response, error)` — core method with limiter, retry, backoff
-- [ ] Implement `backoff(attempt int, extra time.Duration) time.Duration`
-- [ ] Implement `parseRetryAfter(resp) time.Duration`
-- [ ] Implement `cloneRequest(req) (*http.Request, error)` for retry body replay
-- [ ] Run `go test -race ./pkg/gitlab/` — all tests pass
+- [x] Implement `NewClient(cfg ClientConfig) *Client`
+- [x] Implement `do(ctx, req) (*http.Response, error)` — core method with limiter, retry, backoff
+- [x] Implement `backoff(attempt int, extra time.Duration) time.Duration`
+- [x] Implement `parseRetryAfter(resp) time.Duration`
+- [x] Implement `cloneRequest(req) (*http.Request, error)` for retry body replay
+- [x] Run `go test -race ./pkg/gitlab/` — all tests pass
 
 ---
 
