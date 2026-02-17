@@ -389,15 +389,15 @@ complexity: Medium
 ---
 
 **Steps:**
-- [ ] Run `go test -race ./...` — all tests pass
-- [ ] Run `go vet ./...` — no issues
-- [ ] Run `make build` — binary compiles
-- [ ] Manual test: `./bin/glenv version` prints version
-- [ ] Manual test: `./bin/glenv sync --help` shows correct flags
-- [ ] Manual test: `./bin/glenv diff --help` shows correct flags
-- [ ] Manual test: `./bin/glenv list --help` shows correct flags
-- [ ] Check test coverage: `go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out` — target >= 80%
-- [ ] Fix any issues found during verification
+- [x] Run `go test -race ./...` — all tests pass
+- [x] Run `go vet ./...` — no issues
+- [x] Run `make build` — binary compiles
+- [x] Manual test: `./bin/glenv version` prints version
+- [x] Manual test: `./bin/glenv sync --help` shows correct flags
+- [x] Manual test: `./bin/glenv diff --help` shows correct flags
+- [x] Manual test: `./bin/glenv list --help` shows correct flags
+- [x] Check test coverage: `go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out` — target >= 80%
+- [x] Fix any issues found during verification
 
 ---
 
