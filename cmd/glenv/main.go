@@ -66,9 +66,36 @@ func (cmd *SyncCommand) Execute(args []string) error {
 		return err
 	}
 
-	parsed, err := envfile.ParseFile(cmd.File)
+	// --all: sync each environment defined in config file.
+	if cmd.All {
+		if len(cfg.Environments) == 0 {
+			return fmt.Errorf("--all requires environments to be defined in config file")
+		}
+		var firstErr error
+		for envName, envCfg := range cfg.Environments {
+			envFile := envCfg.File
+			if envFile == "" {
+				envFile = cmd.File
+			}
+			fmt.Printf("\n=== Syncing environment: %s (file: %s) ===\n", envName, envFile)
+			if err := cmd.syncOne(cfg, client, envFile, envName); err != nil {
+				color.Red("error syncing %s: %v\n", envName, err)
+				if firstErr == nil {
+					firstErr = err
+				}
+			}
+		}
+		return firstErr
+	}
+
+	return cmd.syncOne(cfg, client, cmd.File, cmd.Environment)
+}
+
+// syncOne performs a single sync of envFile to the given environment scope.
+func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFile, envScope string) error {
+	parsed, err := envfile.ParseFile(envFile)
 	if err != nil {
-		return fmt.Errorf("parse %s: %w", cmd.File, err)
+		return fmt.Errorf("parse %s: %w", envFile, err)
 	}
 
 	cl := buildClassifier(cfg, cmd.NoAutoClassify)
@@ -76,16 +103,16 @@ func (cmd *SyncCommand) Execute(args []string) error {
 		Workers:       cmd.global.Workers,
 		DryRun:        cmd.global.DryRun,
 		DeleteMissing: cmd.DeleteMissing,
-		Environment:   cmd.Environment,
+		Environment:   envScope,
 	}
 	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
 
-	remote, err := client.ListVariables(appCtx, cfg.GitLab.ProjectID, gitlab.ListOptions{EnvironmentScope: cmd.Environment})
+	remote, err := client.ListVariables(appCtx, cfg.GitLab.ProjectID, gitlab.ListOptions{EnvironmentScope: envScope})
 	if err != nil {
 		return fmt.Errorf("list remote variables: %w", err)
 	}
 
-	diff := engine.Diff(appCtx, parsed.Variables, remote, cmd.Environment)
+	diff := engine.Diff(appCtx, parsed.Variables, remote, envScope)
 
 	if !cmd.Force && !cmd.global.DryRun {
 		printDiff(diff)
@@ -199,7 +226,7 @@ func (cmd *ExportCommand) Execute(args []string) error {
 
 	out := io.Writer(os.Stdout)
 	if cmd.Output != "" {
-		f, err := os.Create(cmd.Output)
+		f, err := os.OpenFile(cmd.Output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		if err != nil {
 			return fmt.Errorf("create output file: %w", err)
 		}
@@ -209,8 +236,12 @@ func (cmd *ExportCommand) Execute(args []string) error {
 
 	for _, v := range vars {
 		val := v.Value
-		if strings.ContainsAny(val, " \t\n\"'") {
-			val = fmt.Sprintf("%q", val)
+		// Wrap in double quotes if the value contains special characters.
+		// Use double-quote wrapping (not %q / Go escaping) so the output
+		// is valid dotenv format readable by shell and glenv's own parser.
+		if strings.ContainsAny(val, " \t\n\"'\\") {
+			// Escape only backslash and double-quote inside the quoted block.
+			val = `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(val) + `"`
 		}
 		if _, err := fmt.Fprintf(out, "%s=%s\n", v.Key, val); err != nil {
 			return fmt.Errorf("write variable %s: %w", v.Key, err)

@@ -125,7 +125,7 @@ func resolveConfigPath(override, searchDir string) (string, error) {
 }
 
 // Load builds a Config using the priority chain:
-// defaults → env vars → YAML file → env var expansion.
+// defaults → YAML file → env vars → env var expansion.
 //
 // configPath is the explicit config file path (e.g. from --config flag).
 // If empty, the automatic search chain is used.
@@ -133,16 +133,13 @@ func Load(configPath string) (*Config, error) {
 	// Start with defaults.
 	cfg := defaults()
 
-	// Overlay env vars.
-	applyEnvVars(&cfg)
-
 	// Resolve config file.
 	resolved, err := resolveConfigPath(configPath, "")
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse and overlay YAML file (YAML wins over env vars).
+	// Parse and overlay YAML file.
 	if resolved != "" {
 		data, err := os.ReadFile(resolved)
 		if err != nil {
@@ -152,6 +149,9 @@ func Load(configPath string) (*Config, error) {
 			return nil, fmt.Errorf("config: parse %q: %w", resolved, err)
 		}
 	}
+
+	// Overlay env vars (env vars take precedence over YAML file).
+	applyEnvVars(&cfg)
 
 	// Expand ${VAR} references in string fields.
 	expandEnvVars(&cfg)

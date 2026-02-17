@@ -164,8 +164,8 @@ classify:
 	assert.Contains(t, cfg.Classify.FileExclude, "CUSTOM_PATH")
 }
 
-func TestLoad_ConfigFile_OverridesEnvVars(t *testing.T) {
-	// YAML config has higher priority than env vars (Load order: defaults → env → YAML)
+func TestLoad_EnvVars_OverrideConfigFile(t *testing.T) {
+	// Env vars have higher priority than YAML config (Load order: defaults → YAML → env vars).
 	clearGitLabEnv(t)
 	t.Setenv("GITLAB_TOKEN", "env-token")
 	t.Setenv("GITLAB_URL", "https://env.gitlab.com")
@@ -181,9 +181,11 @@ gitlab:
 	cfg, err := Load(path)
 	require.NoError(t, err)
 
-	// YAML wins over env vars
-	assert.Equal(t, "file-token", cfg.GitLab.Token)
-	assert.Equal(t, "https://file.gitlab.com", cfg.GitLab.URL)
+	// Env vars win over YAML file.
+	assert.Equal(t, "env-token", cfg.GitLab.Token)
+	assert.Equal(t, "https://env.gitlab.com", cfg.GitLab.URL)
+	// Values not set via env var still come from YAML.
+	assert.Equal(t, "1", cfg.GitLab.ProjectID)
 }
 
 // TestValidate_MissingToken checks that Validate returns error if token is empty.

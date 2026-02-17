@@ -103,10 +103,11 @@ func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, pro
 func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult {
 	env := e.opts.Environment
 
-	// Index remote by key for O(1) lookup.
+	// Index remote by (key, envScope) compound key for O(1) lookup.
+	// GitLab variables are uniquely identified by (key, environment_scope).
 	remoteMap := make(map[string]gitlab.Variable, len(remote))
 	for _, v := range remote {
-		remoteMap[v.Key] = v
+		remoteMap[v.Key+"\x00"+v.EnvironmentScope] = v
 	}
 
 	localKeys := make(map[string]struct{}, len(local))
@@ -118,7 +119,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 
 		classLabel := buildClassLabel(cl)
 
-		rv, exists := remoteMap[lv.Key]
+		rv, exists := remoteMap[lv.Key+"\x00"+envScope]
 		switch {
 		case !exists:
 			changes = append(changes, Change{
