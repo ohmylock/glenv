@@ -364,19 +364,19 @@ complexity: Large
 - Masked values shown as `***`
 
 **Steps:**
-- [ ] Implement `GlobalOptions` struct with go-flags tags
-- [ ] Implement `main()` with `flags.NewParser`, subcommand registration, `signal.NotifyContext`
-- [ ] Implement `VersionCommand.Execute()` — print version from ldflags
-- [ ] Implement `buildClient(global, cfg)` helper and `setupColor(noColor)`
-- [ ] Implement `SyncCommand.Execute()` — full flow: config → client → parse → classify → fetch → diff → confirm → apply → report
-- [ ] Implement `DiffCommand.Execute()` — same flow, print diff without apply
-- [ ] Implement `ListCommand.Execute()` — fetch and print as aligned table
-- [ ] Implement `ExportCommand.Execute()` — fetch and write KEY=VALUE format
-- [ ] Implement `DeleteCommand.Execute()` — delete with confirmation prompt
-- [ ] Implement `printSyncReport(report)` and `printDiff(diff)` with colored output
-- [ ] Implement `maskIfNeeded(value, classification)` helper
-- [ ] Verify: `go build ./cmd/glenv/` compiles
-- [ ] Verify: `./bin/glenv version`, `./bin/glenv sync --help` work correctly
+- [x] Implement `GlobalOptions` struct with go-flags tags
+- [x] Implement `main()` with `flags.NewParser`, subcommand registration, `signal.NotifyContext`
+- [x] Implement `VersionCommand.Execute()` — print version from ldflags
+- [x] Implement `buildClient(global, cfg)` helper and `setupColor(noColor)`
+- [x] Implement `SyncCommand.Execute()` — full flow: config → client → parse → classify → fetch → diff → confirm → apply → report
+- [x] Implement `DiffCommand.Execute()` — same flow, print diff without apply
+- [x] Implement `ListCommand.Execute()` — fetch and print as aligned table
+- [x] Implement `ExportCommand.Execute()` — fetch and write KEY=VALUE format
+- [x] Implement `DeleteCommand.Execute()` — delete with confirmation prompt
+- [x] Implement `printSyncReport(report)` and `printDiff(diff)` with colored output
+- [x] Implement `maskIfNeeded(value, classification)` helper
+- [x] Verify: `go build ./cmd/glenv/` compiles
+- [x] Verify: `./bin/glenv version`, `./bin/glenv sync --help` work correctly
 
 ---
 
