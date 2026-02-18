@@ -48,10 +48,10 @@ complexity: Low
 - Modify: `cmd/glenv/main.go`
 
 **Steps:**
-- [ ] Remove `default:".env"` from SyncCommand.File (line 62)
-- [ ] Remove `default:".env"` from DiffCommand.File (line 171)
-- [ ] Update description to clarify default behavior
-- [ ] Run `go build ./...` — must pass
+- [x] Remove `default:".env"` from SyncCommand.File (line 62)
+- [x] Remove `default:".env"` from DiffCommand.File (line 171)
+- [x] Update description to clarify default behavior
+- [x] Run `go build ./...` — must pass
 
 ### Task 3: Integrate resolveEnvFile into SyncCommand.Execute
 
