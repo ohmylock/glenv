@@ -92,11 +92,11 @@ complexity: Low
 ---
 
 **Steps:**
-- [ ] Run `go test -race ./...` — all tests pass
-- [ ] Run `go vet ./...` — no issues
-- [ ] Manual test: `glenv diff -e staging` uses config file path
-- [ ] Manual test: `glenv diff -e staging -f .env` uses explicit flag
-- [ ] Manual test: `glenv diff` (no -e) uses default `.env`
+- [x] Run `go test -race ./...` — all tests pass
+- [x] Run `go vet ./...` — no issues
+- [x] Manual test: `glenv diff -e staging` uses config file path
+- [x] Manual test: `glenv diff -e staging -f .env` uses explicit flag
+- [x] Manual test: `glenv diff` (no -e) uses default `.env`
 
 ## File Summary
 
