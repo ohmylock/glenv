@@ -266,7 +266,7 @@ complexity: Medium
 - Create: `cmd/glenv/main.go`
 
 **Steps:**
-- [ ] Implement `GlobalOptions` struct with go-flags tags:
+- [x] Implement `GlobalOptions` struct with go-flags tags:
   - `Config string` — `short:"c" long:"config" description:"Config file path"`
   - `Token string` — `long:"token" env:"GITLAB_TOKEN"`
   - `Project string` — `long:"project" env:"GITLAB_PROJECT_ID"`
@@ -276,24 +276,24 @@ complexity: Medium
   - `NoColor bool` — `long:"no-color" env:"NO_COLOR"`
   - `Workers int` — `short:"w" long:"workers" default:"5"`
   - `RateLimit float64` — `long:"rate-limit" default:"10"`
-- [ ] Implement `var version = "dev"` (injected via ldflags at build time)
-- [ ] Implement `var appCtx context.Context` — package-level context for subcommands
-- [ ] Implement `main()`:
+- [x] Implement `var version = "dev"` (injected via ldflags at build time)
+- [x] Implement `var appCtx context.Context` — package-level context for subcommands
+- [x] Implement `main()`:
   - Create `signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)` → assign to `appCtx`
   - Create `flags.NewParser(&globalOpts, flags.Default)`
   - Register subcommands: sync, diff, list, export, delete, version
   - Call `parser.Parse()`, handle `flags.ErrHelp` gracefully
-- [ ] Implement `VersionCommand`:
+- [x] Implement `VersionCommand`:
   - `Execute(args []string) error` → `fmt.Printf("glenv version %s\n", version)`
-- [ ] Implement `setupColor(noColor bool)`:
+- [x] Implement `setupColor(noColor bool)`:
   - Set `color.NoColor = true` if `noColor || os.Getenv("NO_COLOR") != ""`
-- [ ] Implement `buildClient(global *GlobalOptions, cfg *config.Config) *gitlab.Client`:
+- [x] Implement `buildClient(global *GlobalOptions, cfg *config.Config) *gitlab.Client`:
   - Override cfg fields with non-zero global flags
   - Return `gitlab.NewClient(...)` with merged config
-- [ ] Implement `coalesce(a, b string) string` — return first non-empty
-- [ ] Verify: `go build ./cmd/glenv/` compiles
-- [ ] Verify: `.bin/glenv version` prints "glenv version dev"
-- [ ] Verify: `.bin/glenv --help` shows global flags and subcommand list
+- [x] Implement `coalesce(a, b string) string` — return first non-empty
+- [x] Verify: `go build ./cmd/glenv/` compiles
+- [x] Verify: `.bin/glenv version` prints "glenv version dev"
+- [x] Verify: `.bin/glenv --help` shows global flags and subcommand list
 
 ---
 
