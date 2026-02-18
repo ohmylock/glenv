@@ -81,6 +81,10 @@ func expandEnvVars(cfg *Config) {
 	cfg.GitLab.URL = os.ExpandEnv(cfg.GitLab.URL)
 	cfg.GitLab.Token = os.ExpandEnv(cfg.GitLab.Token)
 	cfg.GitLab.ProjectID = os.ExpandEnv(cfg.GitLab.ProjectID)
+	for name, envCfg := range cfg.Environments {
+		envCfg.File = os.ExpandEnv(envCfg.File)
+		cfg.Environments[name] = envCfg
+	}
 }
 
 // resolveConfigPath determines the config file path to use.

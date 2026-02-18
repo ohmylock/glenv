@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -87,18 +88,16 @@ func (cmd *SyncCommand) Execute(args []string) error {
 		}
 		sort.Strings(envNames)
 
-		var firstErr error
+		var errs []error
 		for _, envName := range envNames {
 			envFile := resolveEnvFile(cmd.File, envName, cfg)
 			fmt.Printf("\n=== Syncing environment: %s (file: %s) ===\n", envName, envFile)
 			if err := cmd.syncOne(cfg, client, envFile, envName); err != nil {
 				red.Printf("error syncing %s: %v\n", envName, err)
-				if firstErr == nil {
-					firstErr = err
-				}
+				errs = append(errs, fmt.Errorf("%s: %w", envName, err))
 			}
 		}
-		return firstErr
+		return errors.Join(errs...)
 	}
 
 	return cmd.syncOne(cfg, client, resolveEnvFile(cmd.File, cmd.Environment, cfg), cmd.Environment)
@@ -366,7 +365,7 @@ func resolveEnvFile(flagFile, environment string, cfg *config.Config) string {
 	if flagFile != "" {
 		return flagFile
 	}
-	if environment != "" && environment != "*" {
+	if environment != "*" {
 		if envCfg, ok := cfg.Environments[environment]; ok && envCfg.File != "" {
 			return envCfg.File
 		}
@@ -435,6 +434,9 @@ func confirm(prompt string) bool {
 	if scanner.Scan() {
 		ans := strings.TrimSpace(strings.ToLower(scanner.Text()))
 		return ans == "y" || ans == "yes"
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
 	}
 	return false
 }
