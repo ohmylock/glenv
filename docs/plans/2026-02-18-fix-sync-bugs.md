@@ -65,9 +65,9 @@ complexity: Low
 - Modify: `cmd/glenv/main.go`
 
 **Steps:**
-- [ ] Before line 108, call `resolveEnvFile()` to get correct file path
-- [ ] Pass resolved path to `syncOne()` instead of `cmd.File`
-- [ ] Run `go test -race ./...` — must pass
+- [x] Before line 108, call `resolveEnvFile()` to get correct file path
+- [x] Pass resolved path to `syncOne()` instead of `cmd.File`
+- [x] Run `go test -race ./...` — must pass
 
 ### Task 4: Integrate resolveEnvFile into DiffCommand.Execute
 
@@ -81,9 +81,9 @@ complexity: Low
 - Modify: `cmd/glenv/main.go`
 
 **Steps:**
-- [ ] After loading config, call `resolveEnvFile()` to get correct file path
-- [ ] Use resolved path in `envfile.ParseFile()` call
-- [ ] Run `go test -race ./...` — must pass
+- [x] After loading config, call `resolveEnvFile()` to get correct file path
+- [x] Use resolved path in `envfile.ParseFile()` call
+- [x] Run `go test -race ./...` — must pass
 
 ### Task 5: Fix Diff() scope matching logic
 
@@ -99,11 +99,11 @@ complexity: Medium
 - Modify: `pkg/sync/engine.go`
 
 **Steps:**
-- [ ] In Diff() function, after `rv, exists := remoteMap[lv.Key]`
-- [ ] Add scope match check: `scopeMatch := exists && (rv.EnvironmentScope == envScope || rv.EnvironmentScope == "*")`
-- [ ] Change switch to use `!scopeMatch` for CREATE case instead of `!exists`
-- [ ] For UPDATE case, use `rv.EnvironmentScope` instead of `envScope` parameter
-- [ ] Run `go test -race ./...` — must pass
+- [x] In Diff() function, after `rv, exists := remoteMap[lv.Key]`
+- [x] Add scope match check: `scopeMatch := exists && (rv.EnvironmentScope == envScope || rv.EnvironmentScope == "*")`
+- [x] Change switch to use `!scopeMatch` for CREATE case instead of `!exists`
+- [x] For UPDATE case, use `rv.EnvironmentScope` instead of `envScope` parameter
+- [x] Run `go test -race ./...` — must pass
 
 ### Task 6: Add unit test for scope mismatch scenario
 
@@ -117,9 +117,9 @@ complexity: Low
 - Modify: `pkg/sync/engine_test.go`
 
 **Steps:**
-- [ ] Add test: local var exists, remote var exists with different scope → expect CREATE
-- [ ] Add test: local var exists, remote var exists with wildcard "*" scope → expect UPDATE
-- [ ] Run `go test -race ./pkg/sync/...` — must pass
+- [x] Add test: local var exists, remote var exists with different scope → expect CREATE
+- [x] Add test: local var exists, remote var exists with wildcard "*" scope → expect UPDATE
+- [x] Run `go test -race ./pkg/sync/...` — must pass
 
 ### Task 7: Verification
 
@@ -130,11 +130,11 @@ complexity: Low
 ---
 
 **Steps:**
-- [ ] Run `go test -race ./...` — all tests pass
-- [ ] Run `go vet ./...` — no issues
-- [ ] Manual test: `glenv diff -e staging` uses config file path
-- [ ] Manual test: `glenv diff -e production` with staging-only var shows CREATE not UPDATE
-- [ ] Manual test: `glenv sync -e production` creates new variable (no 404)
+- [x] Run `go test -race ./...` — all tests pass
+- [x] Run `go vet ./...` — no issues
+- [x] Manual test: `glenv diff -e staging` uses config file path
+- [x] Manual test: `glenv diff -e production` with staging-only var shows CREATE not UPDATE
+- [x] Manual test: `glenv sync -e production` creates new variable (no 404)
 
 ## File Summary
 

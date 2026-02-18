@@ -377,3 +377,33 @@ func TestDiff_ClassificationAttached(t *testing.T) {
 	assert.Equal(t, ChangeCreate, diff.Changes[0].Kind)
 	assert.Contains(t, diff.Changes[0].Classification, "masked")
 }
+
+func TestDiff_ScopeMismatch_CreateNew(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Local: "production", Remote: same key with "staging" scope.
+	// Because the scopes don't match, we should CREATE for production, not UPDATE the staging one.
+	local := []envfile.Variable{{Key: "DB_PASS", Value: "prod_secret"}}
+	remote := []gitlab.Variable{{Key: "DB_PASS", Value: "staging_secret", EnvironmentScope: "staging"}}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeCreate, diff.Changes[0].Kind, "mismatched scope should trigger CREATE")
+	assert.Equal(t, "production", diff.Changes[0].envScope)
+}
+
+func TestDiff_WildcardScope_Update(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Local: "production", Remote: same key with wildcard "*" scope.
+	// Wildcard matches all scopes, so we should UPDATE, not CREATE.
+	local := []envfile.Variable{{Key: "COMMON_VAR", Value: "new_value"}}
+	remote := []gitlab.Variable{{Key: "COMMON_VAR", Value: "old_value", EnvironmentScope: "*"}}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind, "wildcard scope should match any target scope")
+	assert.Equal(t, "*", diff.Changes[0].envScope)
+}

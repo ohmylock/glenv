@@ -122,8 +122,12 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 		classLabel := buildClassLabel(cl)
 
 		rv, exists := remoteMap[lv.Key]
+		// scopeMatch checks if the remote variable matches the target environment scope.
+		// A match requires: remote exists AND (remote scope == target scope OR remote scope is "*").
+		scopeMatch := exists && (rv.EnvironmentScope == envScope || rv.EnvironmentScope == "*")
+
 		switch {
-		case !exists:
+		case !scopeMatch:
 			changes = append(changes, Change{
 				Kind:           ChangeCreate,
 				Key:            lv.Key,
@@ -145,7 +149,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				masked:         cl.Masked,
 				protected:      cl.Protected,
 				raw:            rv.Raw,
-				envScope:       envScope,
+				envScope:       rv.EnvironmentScope,
 			})
 		default:
 			changes = append(changes, Change{
@@ -154,7 +158,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				OldValue:       rv.Value,
 				NewValue:       lv.Value,
 				Classification: classLabel,
-				envScope:       envScope,
+				envScope:       rv.EnvironmentScope,
 			})
 		}
 	}
