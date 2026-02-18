@@ -6,6 +6,7 @@ progress*.txt
 .bin/
 bin/
 dist/
+/glenv
 
 # project artifacts
 coverage.out

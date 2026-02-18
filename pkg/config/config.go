@@ -150,11 +150,11 @@ func Load(configPath string) (*Config, error) {
 		}
 	}
 
-	// Overlay env vars (env vars take precedence over YAML file).
-	applyEnvVars(&cfg)
-
-	// Expand ${VAR} references in string fields.
+	// Expand ${VAR} references in YAML string fields first.
 	expandEnvVars(&cfg)
+
+	// Overlay env vars last so they take precedence and are not re-expanded.
+	applyEnvVars(&cfg)
 
 	return &cfg, nil
 }

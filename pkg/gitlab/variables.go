@@ -5,10 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 )
+
+// readErrorBody reads up to 512 bytes from the response body for error diagnostics.
+func readErrorBody(resp *http.Response) string {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512))
+	if err != nil || len(body) == 0 {
+		return ""
+	}
+	return ": " + string(body)
+}
 
 // Variable represents a GitLab CI/CD project variable.
 type Variable struct {
@@ -59,7 +69,7 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 			q.Set("filter[environment_scope]", opts.EnvironmentScope)
 		}
 
-		apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables?%s", c.cfg.BaseURL, projectID, q.Encode())
+		apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables?%s", c.cfg.BaseURL, url.PathEscape(projectID), q.Encode())
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("gitlab: list variables: build request: %w", err)
@@ -71,8 +81,9 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 		}
 
 		if resp.StatusCode != http.StatusOK {
+			msg := readErrorBody(resp)
 			resp.Body.Close()
-			return nil, fmt.Errorf("gitlab: list variables: unexpected status %d", resp.StatusCode)
+			return nil, fmt.Errorf("gitlab: list variables: unexpected status %d%s", resp.StatusCode, msg)
 		}
 
 		var pageVars []Variable
@@ -104,7 +115,7 @@ func (c *Client) GetVariable(ctx context.Context, projectID, key, envScope strin
 		q.Set("filter[environment_scope]", envScope)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, projectID, url.PathEscape(key))
+	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, url.PathEscape(projectID), url.PathEscape(key))
 	if len(q) > 0 {
 		apiURL += "?" + q.Encode()
 	}
@@ -124,7 +135,7 @@ func (c *Client) GetVariable(ctx context.Context, projectID, key, envScope strin
 		return nil, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitlab: get variable: unexpected status %d", resp.StatusCode)
+		return nil, fmt.Errorf("gitlab: get variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
 	}
 
 	var v Variable
@@ -141,7 +152,7 @@ func (c *Client) CreateVariable(ctx context.Context, projectID string, r CreateR
 		return nil, fmt.Errorf("gitlab: create variable: encode: %w", err)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables", c.cfg.BaseURL, projectID)
+	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables", c.cfg.BaseURL, url.PathEscape(projectID))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: create variable: build request: %w", err)
@@ -155,7 +166,7 @@ func (c *Client) CreateVariable(ctx context.Context, projectID string, r CreateR
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("gitlab: create variable: unexpected status %d", resp.StatusCode)
+		return nil, fmt.Errorf("gitlab: create variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
 	}
 
 	var v Variable
@@ -177,7 +188,7 @@ func (c *Client) UpdateVariable(ctx context.Context, projectID string, r CreateR
 		q.Set("filter[environment_scope]", r.EnvironmentScope)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, projectID, url.PathEscape(r.Key))
+	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, url.PathEscape(projectID), url.PathEscape(r.Key))
 	if len(q) > 0 {
 		apiURL += "?" + q.Encode()
 	}
@@ -195,7 +206,7 @@ func (c *Client) UpdateVariable(ctx context.Context, projectID string, r CreateR
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitlab: update variable: unexpected status %d", resp.StatusCode)
+		return nil, fmt.Errorf("gitlab: update variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
 	}
 
 	var v Variable
@@ -213,7 +224,7 @@ func (c *Client) DeleteVariable(ctx context.Context, projectID, key, envScope st
 		q.Set("filter[environment_scope]", envScope)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, projectID, url.PathEscape(key))
+	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, url.PathEscape(projectID), url.PathEscape(key))
 	if len(q) > 0 {
 		apiURL += "?" + q.Encode()
 	}
@@ -230,7 +241,7 @@ func (c *Client) DeleteVariable(ctx context.Context, projectID, key, envScope st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("gitlab: delete variable: unexpected status %d", resp.StatusCode)
+		return fmt.Errorf("gitlab: delete variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
 	}
 	return nil
 }

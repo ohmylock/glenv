@@ -43,7 +43,6 @@ type GlobalOptions struct {
 	Project   string  `long:"project" env:"GITLAB_PROJECT_ID" description:"GitLab project ID"`
 	URL       string  `long:"url" env:"GITLAB_URL" description:"GitLab base URL"`
 	DryRun    bool    `long:"dry-run" description:"Print planned changes without applying them"`
-	Debug     bool    `long:"debug" description:"Enable debug output"`
 	NoColor   bool    `long:"no-color" description:"Disable colored output"`
 	Workers   int     `long:"workers" description:"Number of concurrent workers" default:"5"`
 	RateLimit float64 `long:"rate-limit" description:"Max API requests per second" default:"10"`
@@ -135,13 +134,14 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 		return nil
 	}
 
+	fmt.Printf("\nSyncing: %s → project %s (%s)\n", envFile, cfg.GitLab.ProjectID, envScope)
 	fmt.Println(separator)
 	fmt.Println()
 	report := engine.ApplyWithCallback(appCtx, diff, func(r glsync.Result) {
 		printResult(r)
 	})
 
-	printSyncReport(report, envFile, cfg.GitLab.ProjectID, envScope)
+	printSyncReport(report)
 	return nil
 }
 
@@ -426,10 +426,9 @@ func printHeader() {
 	fmt.Printf("glenv v%s\n\n", version)
 }
 
-func printSyncReport(report glsync.SyncReport, file, projectID, env string) {
-	fmt.Printf("\nSyncing: %s → project %s (%s)\n", file, projectID, env)
-	fmt.Println(separator)
+func printSyncReport(report glsync.SyncReport) {
 	fmt.Println()
+	fmt.Println(separator)
 	fmt.Printf("  Created: %d | Updated: %d | Deleted: %d | Unchanged: %d | Skipped: %d | Failed: %d\n",
 		report.Created, report.Updated, report.Deleted, report.Unchanged, report.Skipped, report.Failed)
 
