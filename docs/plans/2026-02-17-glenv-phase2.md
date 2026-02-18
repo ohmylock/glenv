@@ -469,7 +469,7 @@ complexity: Simple
 - Create: `.github/workflows/release.yml`
 
 **Steps:**
-- [ ] Create `.goreleaser.yml`:
+- [x] Create `.goreleaser.yml`:
   - `version: 2`
   - Build: `main: ./cmd/glenv`, `binary: glenv`, `CGO_ENABLED=0`
   - GOOS: linux, darwin, windows
@@ -478,17 +478,17 @@ complexity: Simple
   - Archives: `name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"`, zip for windows
   - Checksum: `checksums.txt`
   - Changelog: sort asc, exclude `docs:`, `test:`, `ci:` prefixes
-- [ ] Create `.github/workflows/ci.yml`:
+- [x] Create `.github/workflows/ci.yml`:
   - Trigger: push to main, PR to main
   - Jobs:
     - `test`: setup Go 1.25, `go mod download`, `go vet ./...`, `go test -race -coverprofile=coverage.out ./...`
     - `lint`: `golangci/golangci-lint-action@v6` with latest version
-- [ ] Create `.github/workflows/release.yml`:
+- [x] Create `.github/workflows/release.yml`:
   - Trigger: push tag `v*`
   - Job: checkout (fetch-depth: 0), setup Go 1.25, `goreleaser/goreleaser-action@v6` with `release --clean`
   - Permissions: `contents: write`
   - Env: `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`
-- [ ] Verify: `make release-check` (goreleaser snapshot dry-run) passes
+- [x] Verify: `make release-check` (goreleaser snapshot dry-run) passes
 
 ---
 
