@@ -429,27 +429,27 @@ Syncing: .env.production → project 12345678 (production)
 ```
 
 **Steps:**
-- [ ] Define color variables:
+- [x] Define color variables:
   - `green = color.New(color.FgGreen)` — for created
   - `yellow = color.New(color.FgYellow)` — for updated
   - `cyan = color.New(color.FgCyan)` — for unchanged
   - `red = color.New(color.FgRed)` — for failed/deleted
   - `gray = color.New(color.FgHiBlack)` — for skipped
-- [ ] Implement `printResultLine(r sync.Result)`:
+- [x] Implement `printResultLine(r sync.Result)`:
   - Switch on r.Change.Kind: use appropriate symbol and color
   - Append tags: `[masked]` if Classification.Masked, `[protected]` if Classification.Protected
   - If error: append `(error message)`
-- [ ] Implement `printSyncReport(report sync.SyncReport, file, projectID, env string)`:
+- [x] Implement `printSyncReport(report sync.SyncReport, file, projectID, env string)`:
   - Header: `Syncing: FILE → project PROJECTID (ENV)`
   - Separator line: `━━━...`
   - Summary: `Created: N | Updated: N | ...`
   - Footer: `Duration: Xs | API calls: N | Rate: X.X req/s`
-- [ ] Implement `maskIfNeeded(value string, cls classifier.Classification) string`:
+- [x] Implement `maskIfNeeded(value string, cls classifier.Classification) string`:
   - Return `"***"` if `cls.Masked`, else return value
-- [ ] Implement `printHeader()`:
+- [x] Implement `printHeader()`:
   - Print `glenv vVERSION` and newline
-- [ ] Integrate with SyncCommand: use `ApplyWithCallback` → `printResultLine` for streaming, then `printSyncReport`
-- [ ] Verify: build and manually check colored output format
+- [x] Integrate with SyncCommand: use `ApplyWithCallback` → `printResultLine` for streaming, then `printSyncReport`
+- [x] Verify: build and manually check colored output format
 
 ---
 

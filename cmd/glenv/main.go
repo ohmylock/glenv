@@ -27,6 +27,15 @@ var version = "dev"
 // appCtx is the package-level context used by go-flags commands (Execute lacks ctx).
 var appCtx context.Context
 
+// Color variables for output formatting.
+var (
+	green  = color.New(color.FgGreen)
+	yellow = color.New(color.FgYellow)
+	cyan   = color.New(color.FgCyan)
+	red    = color.New(color.FgRed)
+	gray   = color.New(color.FgHiBlack)
+)
+
 // GlobalOptions holds flags shared across all commands.
 type GlobalOptions struct {
 	Config    string  `short:"c" long:"config" description:"Path to .glenv.yml config file"`
@@ -61,6 +70,7 @@ type SyncCommand struct {
 
 func (cmd *SyncCommand) Execute(args []string) error {
 	setupColor(cmd.global.NoColor)
+	printHeader()
 	cfg, client, err := buildClientFromGlobal(cmd.global)
 	if err != nil {
 		return err
@@ -79,7 +89,7 @@ func (cmd *SyncCommand) Execute(args []string) error {
 			}
 			fmt.Printf("\n=== Syncing environment: %s (file: %s) ===\n", envName, envFile)
 			if err := cmd.syncOne(cfg, client, envFile, envName); err != nil {
-				color.Red("error syncing %s: %v\n", envName, err)
+				red.Printf("error syncing %s: %v\n", envName, err)
 				if firstErr == nil {
 					firstErr = err
 				}
@@ -125,11 +135,13 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 		return nil
 	}
 
+	fmt.Println(separator)
+	fmt.Println()
 	report := engine.ApplyWithCallback(appCtx, diff, func(r glsync.Result) {
 		printResult(r)
 	})
 
-	printSyncReport(report)
+	printSyncReport(report, envFile, cfg.GitLab.ProjectID, envScope)
 	return nil
 }
 
@@ -279,10 +291,10 @@ func (cmd *DeleteCommand) Execute(args []string) error {
 	var failed int
 	for _, key := range args {
 		if err := client.DeleteVariable(appCtx, cfg.GitLab.ProjectID, key, cmd.Environment); err != nil {
-			color.Red("✗ %s: %v\n", key, err)
+			red.Printf("✗ %s: %v\n", key, err)
 			failed++
 		} else {
-			color.Green("✓ deleted %s\n", key)
+			green.Printf("✓ deleted %s\n", key)
 		}
 	}
 
@@ -367,24 +379,23 @@ func maskIfNeeded(value, classification string) string {
 
 func printResult(r glsync.Result) {
 	if r.Error != nil {
-		color.Red("  ✗ %s: %v\n", r.Change.Key, r.Error)
+		red.Printf("  ✗ Failed:    %-30s (%v)\n", r.Change.Key, r.Error)
 		return
 	}
 	switch r.Change.Kind {
 	case glsync.ChangeCreate:
 		val := maskIfNeeded(r.Change.NewValue, r.Change.Classification)
 		tags := buildTags(r.Change.Classification)
-		color.Green("  ✓ %s=%s%s\n", r.Change.Key, val, tags)
+		green.Printf("  ✓ Created:   %-30s%s\n", r.Change.Key+"="+val, tags)
 	case glsync.ChangeUpdate:
-		val := maskIfNeeded(r.Change.NewValue, r.Change.Classification)
 		tags := buildTags(r.Change.Classification)
-		color.Yellow("  ↻ %s=%s%s\n", r.Change.Key, val, tags)
+		yellow.Printf("  ↻ Updated:   %-30s%s\n", r.Change.Key, tags)
 	case glsync.ChangeDelete:
-		color.Red("  - %s\n", r.Change.Key)
+		red.Printf("  - Deleted:   %s\n", r.Change.Key)
 	case glsync.ChangeUnchanged:
-		fmt.Printf("  = %s\n", r.Change.Key)
+		cyan.Printf("  = Unchanged: %s\n", r.Change.Key)
 	case glsync.ChangeSkipped:
-		color.HiBlack("  ⊘ %s (%s)\n", r.Change.Key, r.Change.SkipReason)
+		gray.Printf("  ⊘ Skipped:   %-30s (%s)\n", r.Change.Key, r.Change.SkipReason)
 	}
 }
 
@@ -394,24 +405,32 @@ func printDiff(diff glsync.DiffResult) {
 		case glsync.ChangeCreate:
 			val := maskIfNeeded(ch.NewValue, ch.Classification)
 			tags := buildTags(ch.Classification)
-			color.Green("+ %s=%s%s\n", ch.Key, val, tags)
+			green.Printf("+ %s=%s%s\n", ch.Key, val, tags)
 		case glsync.ChangeUpdate:
-			color.Yellow("~ %s: %s → %s\n", ch.Key,
+			yellow.Printf("~ %s: %s → %s\n", ch.Key,
 				maskIfNeeded(ch.OldValue, ch.Classification),
 				maskIfNeeded(ch.NewValue, ch.Classification))
 		case glsync.ChangeDelete:
-			color.Red("- %s\n", ch.Key)
+			red.Printf("- %s\n", ch.Key)
 		case glsync.ChangeUnchanged:
-			fmt.Printf("= %s\n", ch.Key)
+			cyan.Printf("= %s\n", ch.Key)
 		case glsync.ChangeSkipped:
-			color.HiBlack("⊘ %s (%s)\n", ch.Key, ch.SkipReason)
+			gray.Printf("⊘ %s (%s)\n", ch.Key, ch.SkipReason)
 		}
 	}
 }
 
-func printSyncReport(report glsync.SyncReport) {
+const separator = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+func printHeader() {
+	fmt.Printf("glenv v%s\n\n", version)
+}
+
+func printSyncReport(report glsync.SyncReport, file, projectID, env string) {
+	fmt.Printf("\nSyncing: %s → project %s (%s)\n", file, projectID, env)
+	fmt.Println(separator)
 	fmt.Println()
-	fmt.Printf("Created: %d | Updated: %d | Deleted: %d | Unchanged: %d | Skipped: %d | Failed: %d\n",
+	fmt.Printf("  Created: %d | Updated: %d | Deleted: %d | Unchanged: %d | Skipped: %d | Failed: %d\n",
 		report.Created, report.Updated, report.Deleted, report.Unchanged, report.Skipped, report.Failed)
 
 	dur := report.Duration.Round(time.Millisecond)
@@ -419,12 +438,13 @@ func printSyncReport(report glsync.SyncReport) {
 	if report.Duration.Seconds() > 0 {
 		rate = float64(report.APICalls) / report.Duration.Seconds()
 	}
-	fmt.Printf("Duration: %s | API calls: %d | Rate: %.1f req/s\n", dur, report.APICalls, rate)
+	fmt.Printf("  Duration: %s | API calls: %d | Rate: %.1f req/s\n", dur, report.APICalls, rate)
+	fmt.Println(separator)
 
 	if len(report.Errors) > 0 {
 		fmt.Println("\nErrors:")
 		for _, e := range report.Errors {
-			color.Red("  %v\n", e)
+			red.Printf("  %v\n", e)
 		}
 	}
 }
