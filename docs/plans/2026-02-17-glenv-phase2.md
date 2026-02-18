@@ -323,7 +323,7 @@ complexity: Large
 - `Environment string` — `short:"e" long:"environment"`
 
 **Steps:**
-- [ ] Implement `SyncCommand.Execute(args []string) error`:
+- [x] Implement `SyncCommand.Execute(args []string) error`:
   - Load config: `config.Load(global.Config)`
   - Apply CLI flag overrides to config
   - Validate config: `cfg.Validate()`
@@ -338,19 +338,19 @@ complexity: Large
   - If `--delete-missing` and `!--force`: prompt "Delete N variables? [y/N]" via `bufio.Scanner(os.Stdin)`
   - Apply: `engine.ApplyWithCallback(appCtx, diff, printResult)`
   - Print summary report
-- [ ] Implement `DiffCommand.Execute(args []string) error`:
+- [x] Implement `DiffCommand.Execute(args []string) error`:
   - Same flow as sync up to diff calculation
   - Call `printDiff(diff)` — display-only, no apply
   - Print summary: `Created: N | Updated: N | Deleted: N | Unchanged: N`
-- [ ] Implement `printDiff(diff sync.DiffResult)`:
+- [x] Implement `printDiff(diff sync.DiffResult)`:
   - `+` green for create: `+ KEY = "value"`
   - `~` yellow for update: `~ KEY = "old" → "new"`
   - `-` red for delete: `- KEY`
   - `=` cyan for unchanged: `= KEY = "value"`
   - Masked values shown as `***`
-- [ ] Handle `--all` mode: iterate environments map from config, sync each sequentially
-- [ ] Verify: `./bin/glenv sync --help` shows all flags
-- [ ] Verify: `./bin/glenv diff --help` shows all flags
+- [x] Handle `--all` mode: iterate environments map from config, sync each sequentially
+- [x] Verify: `./bin/glenv sync --help` shows all flags
+- [x] Verify: `./bin/glenv diff --help` shows all flags
 
 ---
 
