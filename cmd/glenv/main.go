@@ -363,6 +363,20 @@ func resolveWorkers(global *GlobalOptions, cfg *config.Config) int {
 	return 5
 }
 
+// resolveEnvFile returns the .env file path using priority:
+// explicit --file flag > environment file from config > default ".env".
+func resolveEnvFile(flagFile, environment string, cfg *config.Config) string {
+	if flagFile != "" {
+		return flagFile
+	}
+	if environment != "" && environment != "*" {
+		if envCfg, ok := cfg.Environments[environment]; ok && envCfg.File != "" {
+			return envCfg.File
+		}
+	}
+	return ".env"
+}
+
 func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Client, error) {
 	cfg, err := config.Load(global.Config)
 	if err != nil {
