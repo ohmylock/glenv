@@ -34,6 +34,7 @@ type Change struct {
 	varType     string
 	masked      bool
 	protected   bool
+	raw         bool
 	envScope    string
 }
 
@@ -145,6 +146,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				varType:        cl.VarType,
 				masked:         cl.Masked,
 				protected:      cl.Protected,
+				raw:            rv.Raw,
 				envScope:       envScope,
 			})
 		default:
@@ -188,11 +190,35 @@ func (e *Engine) ApplyWithCallback(ctx context.Context, diff DiffResult, cb func
 	start := time.Now()
 	report := SyncReport{}
 
-	taskCh := make(chan Change, len(diff.Changes))
-	resultCh := make(chan Result, len(diff.Changes))
-
-	// Enqueue tasks.
+	// Count non-actionable changes upfront — don't send through the worker pool.
+	var actionable []Change
 	for _, ch := range diff.Changes {
+		switch ch.Kind {
+		case ChangeUnchanged:
+			report.Unchanged++
+			if cb != nil {
+				cb(Result{Change: ch})
+			}
+		case ChangeSkipped:
+			report.Skipped++
+			if cb != nil {
+				cb(Result{Change: ch})
+			}
+		default:
+			actionable = append(actionable, ch)
+		}
+	}
+
+	if len(actionable) == 0 {
+		report.Duration = time.Since(start)
+		return report
+	}
+
+	taskCh := make(chan Change, len(actionable))
+	resultCh := make(chan Result, len(actionable))
+
+	// Enqueue only actionable tasks.
+	for _, ch := range actionable {
 		taskCh <- ch
 	}
 	close(taskCh)
@@ -246,10 +272,6 @@ func (e *Engine) ApplyWithCallback(ctx context.Context, diff DiffResult, cb func
 			if !e.opts.DryRun {
 				report.APICalls++
 			}
-		case ChangeUnchanged:
-			report.Unchanged++
-		case ChangeSkipped:
-			report.Skipped++
 		}
 	}
 
@@ -295,6 +317,7 @@ func (e *Engine) applyOne(ctx context.Context, task Change) Result {
 			EnvironmentScope: task.envScope,
 			Masked:           task.masked,
 			Protected:        task.protected,
+			Raw:              task.raw,
 		}
 		if req.VariableType == "" {
 			req.VariableType = "env_var"

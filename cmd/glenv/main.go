@@ -43,9 +43,9 @@ type GlobalOptions struct {
 	Token     string  `long:"token" env:"GITLAB_TOKEN" description:"GitLab private token"`
 	Project   string  `long:"project" env:"GITLAB_PROJECT_ID" description:"GitLab project ID"`
 	URL       string  `long:"url" env:"GITLAB_URL" description:"GitLab base URL"`
-	DryRun    bool    `long:"dry-run" description:"Print planned changes without applying them"`
+	DryRun    bool    `short:"n" long:"dry-run" description:"Print planned changes without applying them"`
 	NoColor   bool    `long:"no-color" description:"Disable colored output"`
-	Workers   int     `long:"workers" description:"Number of concurrent workers"`
+	Workers   int     `short:"w" long:"workers" description:"Number of concurrent workers"`
 	RateLimit float64 `long:"rate-limit" description:"Max API requests per second"`
 }
 

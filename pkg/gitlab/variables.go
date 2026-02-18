@@ -39,6 +39,7 @@ type CreateRequest struct {
 	EnvironmentScope string `json:"environment_scope"`
 	Protected        bool   `json:"protected"`
 	Masked           bool   `json:"masked"`
+	Raw              bool   `json:"raw"`
 }
 
 // ListOptions controls pagination and filtering for ListVariables.

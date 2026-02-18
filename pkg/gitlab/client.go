@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -34,6 +35,7 @@ type Client struct {
 // NewClient creates a new Client with the given configuration.
 // Default values are applied for zero-value fields.
 func NewClient(cfg ClientConfig) *Client {
+	cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/")
 	if cfg.RequestsPerSecond <= 0 {
 		cfg.RequestsPerSecond = 10
 	}
