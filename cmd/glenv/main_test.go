@@ -67,6 +67,13 @@ func TestResolveEnvFile(t *testing.T) {
 			cfg:         cfg(nil),
 			want:        "override.env",
 		},
+		{
+			name:        "wildcard scope ignores cfg.Environments[*] entry",
+			flagFile:    "",
+			environment: "*",
+			cfg:         cfg(map[string]config.EnvironmentConfig{"*": {File: "global.env"}}),
+			want:        ".env",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

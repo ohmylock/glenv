@@ -85,6 +85,27 @@ gitlab:
 	assert.Equal(t, "expanded-token-value", cfg.GitLab.Token)
 }
 
+func TestLoad_EnvExpansion_EnvironmentFile(t *testing.T) {
+	clearGitLabEnv(t)
+	t.Setenv("STAGING_ENV_FILE", ".env.staging")
+
+	yaml := `
+gitlab:
+  token: tok
+  project_id: "1"
+environments:
+  staging:
+    file: ${STAGING_ENV_FILE}
+`
+	path := writeTempConfig(t, yaml)
+
+	cfg, err := Load(path)
+	require.NoError(t, err)
+
+	require.Contains(t, cfg.Environments, "staging")
+	assert.Equal(t, ".env.staging", cfg.Environments["staging"].File)
+}
+
 func TestLoad_EnvExpansion_ProjectID(t *testing.T) {
 	clearGitLabEnv(t)
 	t.Setenv("MY_PROJECT", "77777")
