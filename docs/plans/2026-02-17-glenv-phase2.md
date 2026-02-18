@@ -368,7 +368,7 @@ complexity: Medium
 - Modify: `cmd/glenv/main.go`
 
 **Steps:**
-- [ ] Implement `ListCommand`:
+- [x] Implement `ListCommand`:
   - Flags: `Environment string` — `short:"e" long:"environment"`
   - `Execute()`: fetch variables, print as aligned table:
     ```
@@ -378,21 +378,21 @@ complexity: Medium
     ```
   - Use `text/tabwriter` for alignment
   - If `-e` specified: filter by environment scope
-- [ ] Implement `ExportCommand`:
+- [x] Implement `ExportCommand`:
   - Flags: `Environment string` — `short:"e" long:"environment"`, `Output string` — `short:"o" long:"output"`
   - `Execute()`: fetch variables, format as `KEY="VALUE"` (quote if contains spaces/special chars)
   - Write to `--output` file or stdout if not specified
   - Skip file-type variables in export (or export with comment)
-- [ ] Implement `DeleteCommand`:
+- [x] Implement `DeleteCommand`:
   - Flags: `Environment string` — `short:"e" long:"environment"`, `Key string` — `long:"key"`, `Force bool` — `long:"force"`
   - `Execute()`: validate `--key` is provided
   - If `!--force`: prompt "Delete variable KEY from SCOPE? [y/N]"
   - Delete via `client.DeleteVariable()`
   - Print result: `✓ Deleted: KEY` or `✗ Failed: KEY (error)`
-- [ ] Implement `confirmPrompt(message string) bool`:
+- [x] Implement `confirmPrompt(message string) bool`:
   - Read line from stdin, return true if "y" or "Y"
   - Used by both sync (delete-missing) and delete commands
-- [ ] Verify: `./bin/glenv list --help`, `export --help`, `delete --help` work
+- [x] Verify: `./bin/glenv list --help`, `export --help`, `delete --help` work
 
 ---
 
