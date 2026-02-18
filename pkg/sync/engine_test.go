@@ -127,6 +127,34 @@ func TestDiff_DeleteMissing_Disabled(t *testing.T) {
 	assert.Empty(t, diff.Changes)
 }
 
+func TestDiff_MultipleChanges(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{DeleteMissing: true})
+
+	local := []envfile.Variable{
+		{Key: "NEW_VAR", Value: "created"},
+		{Key: "CHANGED", Value: "new_val"},
+		{Key: "SAME", Value: "unchanged"},
+	}
+	remote := []gitlab.Variable{
+		{Key: "CHANGED", Value: "old_val", EnvironmentScope: "*"},
+		{Key: "SAME", Value: "unchanged", EnvironmentScope: "*"},
+		{Key: "STALE", Value: "to_delete", EnvironmentScope: "*"},
+	}
+
+	diff := engine.Diff(context.Background(), local, remote, "*")
+
+	require.Len(t, diff.Changes, 4)
+
+	kindMap := make(map[string]ChangeKind)
+	for _, ch := range diff.Changes {
+		kindMap[ch.Key] = ch.Kind
+	}
+	assert.Equal(t, ChangeCreate, kindMap["NEW_VAR"])
+	assert.Equal(t, ChangeUpdate, kindMap["CHANGED"])
+	assert.Equal(t, ChangeUnchanged, kindMap["SAME"])
+	assert.Equal(t, ChangeDelete, kindMap["STALE"])
+}
+
 // --- Apply tests ---
 
 func TestApply_DryRun(t *testing.T) {

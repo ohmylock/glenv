@@ -186,7 +186,7 @@ complexity: Medium
 - `Engine{client *gitlab.Client, classifier *classifier.Classifier, opts Options, projectID string}`
 
 **Steps:**
-- [ ] Write tests:
+- [x] Write tests:
   - `TestDiff_CreateNew` — local has `DB_HOST`, remote empty → Change{Kind: ChangeCreate, Key: "DB_HOST"}
   - `TestDiff_UpdateChanged` — local `API_KEY=new`, remote `API_KEY=old` → Change{Kind: ChangeUpdate, OldValue: "old", NewValue: "new"}
   - `TestDiff_Unchanged` — local and remote identical → Change{Kind: ChangeUnchanged}
@@ -194,13 +194,13 @@ complexity: Medium
   - `TestDiff_DeleteMissing_Disabled` — same scenario, DeleteMissing=false → no ChangeDelete in result
   - `TestDiff_MultipleChanges` — mix of create, update, unchanged → all correctly classified
   - `TestDiff_Classification` — verify classifier is called and Classification populated in changes
-- [ ] Implement `NewEngine(client *gitlab.Client, cls *classifier.Classifier, opts Options, projectID string) *Engine`
-- [ ] Implement `Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult`:
+- [x] Implement `NewEngine(client *gitlab.Client, cls *classifier.Classifier, opts Options, projectID string) *Engine`
+- [x] Implement `Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult`:
   - Build map of remote vars by key
   - Iterate local: if in remote and same value → Unchanged; if different → Update; if not in remote → Create
   - Classify each Create/Update change via `e.classifier.Classify()`
   - If DeleteMissing: iterate remote, if not in local map → Delete
-- [ ] Run `go test -race ./pkg/sync/` — all tests pass
+- [x] Run `go test -race ./pkg/sync/` — all tests pass
 
 ---
 
