@@ -267,7 +267,11 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		if err != nil {
 			return fmt.Errorf("create output file: %w", err)
 		}
-		defer f.Close()
+		defer func() {
+			if outFile != nil {
+				outFile.Close()
+			}
+		}()
 		outFile = f
 		out = f
 	}
@@ -295,7 +299,9 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		}
 	}
 	if outFile != nil {
-		if err := outFile.Close(); err != nil {
+		err := outFile.Close()
+		outFile = nil // prevent defer from closing again
+		if err != nil {
 			return fmt.Errorf("close output file: %w", err)
 		}
 	}

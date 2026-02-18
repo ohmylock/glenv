@@ -1,6 +1,9 @@
 package classifier
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // Classification holds the result of classifying a GitLab CI/CD variable.
 type Classification struct {
@@ -38,10 +41,10 @@ var (
 // User rules are appended to built-in rules (both patterns and excludes).
 func New(userRules Rules) *Classifier {
 	c := &Classifier{
-		maskedPatterns: append(builtinMaskedPatterns, userRules.MaskedPatterns...),
-		maskedExclude:  append(builtinMaskedExclude, userRules.MaskedExclude...),
-		filePatterns:   append(builtinFilePatterns, userRules.FilePatterns...),
-		fileExclude:    append(builtinFileExclude, userRules.FileExclude...),
+		maskedPatterns: slices.Concat(builtinMaskedPatterns, userRules.MaskedPatterns),
+		maskedExclude:  slices.Concat(builtinMaskedExclude, userRules.MaskedExclude),
+		filePatterns:   slices.Concat(builtinFilePatterns, userRules.FilePatterns),
+		fileExclude:    slices.Concat(builtinFileExclude, userRules.FileExclude),
 	}
 	return c
 }

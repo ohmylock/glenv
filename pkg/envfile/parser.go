@@ -236,7 +236,7 @@ func findUnescapedQuote(s string) int {
 }
 
 // unescapeDoubleQuoted processes escape sequences inside a double-quoted value:
-// \\ → \, \" → ", \$ → $
+// \\ → \, \" → ", \$ → $, \n → newline
 func unescapeDoubleQuoted(s string) string {
-	return strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\$`, `$`).Replace(s)
+	return strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\$`, `$`, `\n`, "\n").Replace(s)
 }
