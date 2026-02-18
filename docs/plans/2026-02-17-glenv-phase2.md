@@ -76,25 +76,25 @@ complexity: Medium
 - Modify: `pkg/gitlab/client_test.go`
 
 **Steps:**
-- [ ] Write tests:
+- [x] Write tests:
   - `TestDo_Retry_NetworkError` — mock server drops connection → verify 3 retry attempts, then error
   - `TestDo_Retry_429_RetryAfter` — mock returns 429 with `Retry-After: 1` → verify client waits then retries
   - `TestDo_Retry_429_NoHeader` — 429 without header → use default backoff
   - `TestDo_401_NoRetry` — mock returns 401 → immediate error, verify only 1 request sent
   - `TestDo_MaxRetriesExceeded` — always fails → verify error after RetryMax+1 attempts
   - `TestBackoff_ExponentialWithJitter` — verify backoff grows exponentially, includes jitter component
-- [ ] Implement `backoff(attempt int, extra time.Duration) time.Duration`:
+- [x] Implement `backoff(attempt int, extra time.Duration) time.Duration`:
   - Formula: `RetryInitialBackoff * 2^attempt + random(0, 500ms)`
   - Use `math/rand` for jitter
-- [ ] Implement `parseRetryAfter(resp *http.Response) time.Duration`:
+- [x] Implement `parseRetryAfter(resp *http.Response) time.Duration`:
   - Parse `Retry-After` header as integer seconds
   - Fallback to `RetryInitialBackoff` if header missing or unparseable
-- [ ] Implement `cloneRequest(req *http.Request) (*http.Request, error)`:
+- [x] Implement `cloneRequest(req *http.Request) (*http.Request, error)`:
   - Clone request with `req.Clone(req.Context())`
   - Buffer and restore body for replay (read body, create two `io.NopCloser(bytes.NewReader)`)
-- [ ] Implement `sleep(ctx context.Context, d time.Duration) error`:
+- [x] Implement `sleep(ctx context.Context, d time.Duration) error`:
   - `select { case <-time.After(d): return nil; case <-ctx.Done(): return ctx.Err() }`
-- [ ] Extend `do()` with retry loop:
+- [x] Extend `do()` with retry loop:
   - Loop `attempt := 0; attempt <= c.cfg.RetryMax; attempt++`
   - Clone request before each attempt
   - On 401: close body, return auth error immediately (no retry)
@@ -102,7 +102,7 @@ complexity: Medium
   - On network error: sleep with backoff, continue loop
   - On success: return response
   - After loop exhausted: return last error wrapped with "max retries exceeded"
-- [ ] Run `go test -race ./pkg/gitlab/` — all tests pass
+- [x] Run `go test -race ./pkg/gitlab/` — all tests pass
 
 ---
 

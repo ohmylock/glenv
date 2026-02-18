@@ -149,6 +149,67 @@ func TestDo_Retry_429_RetryAfter(t *testing.T) {
 	assert.Equal(t, int32(2), atomic.LoadInt32(&callCount), "should retry after 429")
 }
 
+func TestDo_Retry_429_NoHeader(t *testing.T) {
+	var callCount int32
+
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		count := atomic.AddInt32(&callCount, 1)
+		if count == 1 {
+			// 429 without Retry-After header — should use default backoff
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`"ok"`))
+	})
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	require.NoError(t, err)
+
+	resp, err := client.Do(context.Background(), req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&callCount), "should retry after 429 without Retry-After header")
+}
+
+func TestDo_MaxRetriesExceeded(t *testing.T) {
+	var callCount int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		// Always drop connection to simulate persistent network failure
+		hj, ok := w.(http.Hijacker)
+		if ok {
+			conn, _, _ := hj.Hijack()
+			conn.Close()
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+
+	cfg := ClientConfig{
+		BaseURL:             srv.URL,
+		Token:               "test-token",
+		RequestsPerSecond:   100,
+		Burst:               100,
+		RetryMax:            2,
+		RetryInitialBackoff: 1 * time.Millisecond,
+	}
+	client := NewClient(cfg)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", nil)
+	require.NoError(t, err)
+
+	_, err = client.Do(context.Background(), req)
+	assert.Error(t, err, "should return error after max retries")
+	assert.Contains(t, err.Error(), "failed after")
+	// RetryMax=2 means 3 total attempts (initial + 2 retries)
+	assert.Equal(t, int32(3), atomic.LoadInt32(&callCount), "should attempt RetryMax+1 times")
+}
+
 func TestDo_401_NoRetry(t *testing.T) {
 	var callCount int32
 
