@@ -63,9 +63,9 @@ complexity: Low
 - Modify: `cmd/glenv/main.go` (SyncCommand.Execute method)
 
 **Steps:**
-- [ ] Before line 108, call `resolveEnvFile()` to get correct file path
-- [ ] Pass resolved path to `syncOne()` instead of `cmd.File`
-- [ ] Run existing tests: `go test -race ./...` — must pass
+- [x] Before line 108, call `resolveEnvFile()` to get correct file path
+- [x] Pass resolved path to `syncOne()` instead of `cmd.File`
+- [x] Run existing tests: `go test -race ./...` — must pass
 
 ### Task 4: Integrate resolveEnvFile into DiffCommand.Execute
 

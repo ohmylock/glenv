@@ -89,11 +89,7 @@ func (cmd *SyncCommand) Execute(args []string) error {
 
 		var firstErr error
 		for _, envName := range envNames {
-			envCfg := cfg.Environments[envName]
-			envFile := envCfg.File
-			if envFile == "" {
-				envFile = cmd.File
-			}
+			envFile := resolveEnvFile(cmd.File, envName, cfg)
 			fmt.Printf("\n=== Syncing environment: %s (file: %s) ===\n", envName, envFile)
 			if err := cmd.syncOne(cfg, client, envFile, envName); err != nil {
 				red.Printf("error syncing %s: %v\n", envName, err)
@@ -105,7 +101,7 @@ func (cmd *SyncCommand) Execute(args []string) error {
 		return firstErr
 	}
 
-	return cmd.syncOne(cfg, client, cmd.File, cmd.Environment)
+	return cmd.syncOne(cfg, client, resolveEnvFile(cmd.File, cmd.Environment, cfg), cmd.Environment)
 }
 
 // syncOne performs a single sync of envFile to the given environment scope.
