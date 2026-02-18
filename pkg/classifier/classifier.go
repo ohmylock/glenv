@@ -57,7 +57,11 @@ func (c *Classifier) Classify(key, value, environment string) Classification {
 	// File type check takes priority over masked.
 	if c.matchesFile(key, value) {
 		cl.VarType = "file"
-		// File variables are never masked (GitLab handles them differently).
+		// File variables are never masked (GitLab handles them differently),
+		// but they can still be protected.
+		if environment == "production" {
+			cl.Protected = true
+		}
 		return cl
 	}
 

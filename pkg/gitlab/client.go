@@ -107,9 +107,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 			continue
 		}
 
-		// 401: do not retry.
+		// 401: do not retry — return a clear authentication error.
 		if resp.StatusCode == http.StatusUnauthorized {
-			return resp, nil
+			resp.Body.Close()
+			return nil, fmt.Errorf("gitlab: authentication failed (HTTP 401): verify your PRIVATE-TOKEN")
 		}
 
 		// 429: respect Retry-After, then retry.

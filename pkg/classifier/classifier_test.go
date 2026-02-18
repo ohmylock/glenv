@@ -138,6 +138,28 @@ func TestClassify_PEMValue_TokenKey_FileType(t *testing.T) {
 	assert.Equal(t, "file", got.VarType)
 }
 
+func TestClassify_FileType_Production_Protected(t *testing.T) {
+	c := defaultClassifier()
+	got := c.Classify("RSA_PRIVATE_KEY", "any value", "production")
+	assert.Equal(t, "file", got.VarType)
+	assert.True(t, got.Protected, "file-type variables in production should be protected")
+	assert.False(t, got.Masked, "file-type variables are never masked")
+}
+
+func TestClassify_PEMValue_Production_Protected(t *testing.T) {
+	c := defaultClassifier()
+	got := c.Classify("MY_CERT", "-----BEGIN CERTIFICATE-----\ndata\n-----END CERTIFICATE-----", "production")
+	assert.Equal(t, "file", got.VarType)
+	assert.True(t, got.Protected, "PEM values in production should be protected")
+}
+
+func TestClassify_FileType_Staging_NotProtected(t *testing.T) {
+	c := defaultClassifier()
+	got := c.Classify("RSA_PRIVATE_KEY", "any value", "staging")
+	assert.Equal(t, "file", got.VarType)
+	assert.False(t, got.Protected, "file-type variables in non-production should not be protected")
+}
+
 // --- Custom rules ---
 
 func TestClassify_CustomMaskedPattern(t *testing.T) {

@@ -222,10 +222,9 @@ func TestDo_401_NoRetry(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	assert.Error(t, err, "401 should return an error")
+	assert.Nil(t, resp, "401 should not return a response")
+	assert.Contains(t, err.Error(), "authentication failed")
 	assert.Equal(t, int32(1), atomic.LoadInt32(&callCount), "401 should not be retried")
 }
 
