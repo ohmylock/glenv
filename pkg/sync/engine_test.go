@@ -86,7 +86,7 @@ func TestDiff_Unchanged(t *testing.T) {
 	engine := newTestEngine(&fakeClient{}, Options{})
 
 	local := []envfile.Variable{{Key: "SAME", Value: "value"}}
-	remote := []gitlab.Variable{{Key: "SAME", Value: "value", EnvironmentScope: "*"}}
+	remote := []gitlab.Variable{{Key: "SAME", Value: "value", VariableType: "env_var", EnvironmentScope: "*"}}
 
 	diff := engine.Diff(context.Background(), local, remote, "*")
 
@@ -100,7 +100,7 @@ func TestDiff_DeleteMissing_Enabled(t *testing.T) {
 
 	local := []envfile.Variable{{Key: "LOCAL", Value: "v"}}
 	remote := []gitlab.Variable{
-		{Key: "LOCAL", Value: "v", EnvironmentScope: "*"},
+		{Key: "LOCAL", Value: "v", VariableType: "env_var", EnvironmentScope: "*"},
 		{Key: "REMOTE_ONLY", Value: "x", EnvironmentScope: "*"},
 	}
 
@@ -136,9 +136,9 @@ func TestDiff_MultipleChanges(t *testing.T) {
 		{Key: "SAME", Value: "unchanged"},
 	}
 	remote := []gitlab.Variable{
-		{Key: "CHANGED", Value: "old_val", EnvironmentScope: "*"},
-		{Key: "SAME", Value: "unchanged", EnvironmentScope: "*"},
-		{Key: "STALE", Value: "to_delete", EnvironmentScope: "*"},
+		{Key: "CHANGED", Value: "old_val", VariableType: "env_var", EnvironmentScope: "*"},
+		{Key: "SAME", Value: "unchanged", VariableType: "env_var", EnvironmentScope: "*"},
+		{Key: "STALE", Value: "to_delete", VariableType: "env_var", EnvironmentScope: "*"},
 	}
 
 	diff := engine.Diff(context.Background(), local, remote, "*")
@@ -348,6 +348,20 @@ func TestApply_EmptyDiff(t *testing.T) {
 	assert.Equal(t, 0, report.Deleted)
 	assert.Equal(t, 0, report.Failed)
 	assert.Equal(t, 0, report.APICalls)
+}
+
+func TestDiff_MetadataChange(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Same value, but remote has wrong type — should trigger update.
+	local := []envfile.Variable{{Key: "API_KEY", Value: "supersecretvalue123"}}
+	remote := []gitlab.Variable{{Key: "API_KEY", Value: "supersecretvalue123", VariableType: "env_var", Masked: false, EnvironmentScope: "*"}}
+
+	diff := engine.Diff(context.Background(), local, remote, "*")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind, "metadata mismatch should trigger update")
+	assert.Contains(t, diff.Changes[0].Classification, "masked")
 }
 
 func TestDiff_ClassificationAttached(t *testing.T) {

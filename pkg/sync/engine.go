@@ -135,7 +135,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				protected:      cl.Protected,
 				envScope:       envScope,
 			})
-		case rv.Value != lv.Value:
+		case rv.Value != lv.Value || rv.VariableType != cl.VarType || rv.Masked != cl.Masked || rv.Protected != cl.Protected:
 			changes = append(changes, Change{
 				Kind:           ChangeUpdate,
 				Key:            lv.Key,
