@@ -27,8 +27,7 @@ type RateLimitConfig struct {
 
 // EnvironmentConfig defines a named deployment environment.
 type EnvironmentConfig struct {
-	File      string `yaml:"file"`
-	Protected bool   `yaml:"protected"`
+	File string `yaml:"file"`
 }
 
 // ClassifyConfig holds user-supplied classification rule overrides.

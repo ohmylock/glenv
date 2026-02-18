@@ -117,10 +117,8 @@ gitlab:
 environments:
   production:
     file: .env.production
-    protected: true
   staging:
     file: .env.staging
-    protected: false
 `
 	path := writeTempConfig(t, yaml)
 
@@ -129,11 +127,9 @@ environments:
 
 	require.Contains(t, cfg.Environments, "production")
 	assert.Equal(t, ".env.production", cfg.Environments["production"].File)
-	assert.True(t, cfg.Environments["production"].Protected)
 
 	require.Contains(t, cfg.Environments, "staging")
 	assert.Equal(t, ".env.staging", cfg.Environments["staging"].File)
-	assert.False(t, cfg.Environments["staging"].Protected)
 }
 
 func TestLoad_ConfigFile_ClassifyRules(t *testing.T) {
