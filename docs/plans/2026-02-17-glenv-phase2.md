@@ -134,7 +134,7 @@ complexity: Medium
 - All support `filter[environment_scope]=<scope>` query parameter
 
 **Steps:**
-- [ ] Write tests with mock server:
+- [x] Write tests with mock server:
   - `TestListVariables_SinglePage` — mock returns 3 vars, no `X-Next-Page` header → returns all 3
   - `TestListVariables_MultiPage` — page 1 returns 2 vars + `X-Next-Page: 2`, page 2 returns 1 var + no header → returns all 3
   - `TestListVariables_WithEnvScope` — verify `filter[environment_scope]=production` query param sent
@@ -144,21 +144,21 @@ complexity: Medium
   - `TestDeleteVariable` — verify DELETE to `/variables/:key`, returns no error on 204
   - `TestGetVariable_Found` — 200 with JSON → returns `*Variable`
   - `TestGetVariable_NotFound` — 404 → returns `nil, nil` (not an error)
-- [ ] Implement `ListVariables(ctx context.Context, projectID string, opts ListOptions) ([]Variable, error)`:
+- [x] Implement `ListVariables(ctx context.Context, projectID string, opts ListOptions) ([]Variable, error)`:
   - Pagination loop: start page=1, per_page=100
   - Build URL with `url.Values` for correct `filter[environment_scope]` encoding
   - Check `X-Next-Page` header — break if empty string or not present
   - Accumulate all variables across pages
-- [ ] Implement `GetVariable(ctx, projectID, key, envScope string) (*Variable, error)`:
+- [x] Implement `GetVariable(ctx, projectID, key, envScope string) (*Variable, error)`:
   - 404 → return nil, nil
   - Success → decode and return
-- [ ] Implement `CreateVariable(ctx, projectID string, req CreateRequest) (*Variable, error)`:
+- [x] Implement `CreateVariable(ctx, projectID string, req CreateRequest) (*Variable, error)`:
   - POST with JSON body, decode response
-- [ ] Implement `UpdateVariable(ctx, projectID string, req CreateRequest) (*Variable, error)`:
+- [x] Implement `UpdateVariable(ctx, projectID string, req CreateRequest) (*Variable, error)`:
   - PUT to `/variables/:key` with JSON body
-- [ ] Implement `DeleteVariable(ctx, projectID, key, envScope string) error`:
+- [x] Implement `DeleteVariable(ctx, projectID, key, envScope string) error`:
   - DELETE, add `filter[environment_scope]` if envScope non-empty
-- [ ] Run `go test -race ./pkg/gitlab/` — all tests pass
+- [x] Run `go test -race ./pkg/gitlab/` — all tests pass
 
 ---
 

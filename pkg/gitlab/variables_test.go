@@ -70,6 +70,18 @@ func TestListVariables_MultiPage(t *testing.T) {
 	assert.Equal(t, int32(2), callCount.Load())
 }
 
+func TestListVariables_Empty(t *testing.T) {
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode([]Variable{})
+	})
+
+	result, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, result)
+}
+
 func TestListVariables_EnvScope(t *testing.T) {
 	var receivedScope string
 
