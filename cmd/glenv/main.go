@@ -59,7 +59,7 @@ func (cmd *VersionCommand) Execute(args []string) error {
 
 // SyncCommand pushes local .env variables to GitLab.
 type SyncCommand struct {
-	File          string `short:"f" long:"file" description:"Path to .env file" default:".env"`
+	File          string `short:"f" long:"file" description:"Path to .env file (resolves from config or defaults to .env)"`
 	Environment   string `short:"e" long:"environment" description:"GitLab environment scope" default:"*"`
 	All           bool   `short:"a" long:"all" description:"Sync all environments defined in config"`
 	DeleteMissing bool   `long:"delete-missing" description:"Delete remote variables not present in .env file"`
@@ -168,7 +168,7 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 
 // DiffCommand shows what would change without applying.
 type DiffCommand struct {
-	File          string `short:"f" long:"file" description:"Path to .env file" default:".env"`
+	File          string `short:"f" long:"file" description:"Path to .env file (resolves from config or defaults to .env)"`
 	Environment   string `short:"e" long:"environment" description:"GitLab environment scope" default:"*"`
 	DeleteMissing bool   `long:"delete-missing" description:"Show variables that would be deleted"`
 	global        *GlobalOptions
