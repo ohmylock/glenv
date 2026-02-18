@@ -177,9 +177,10 @@ func (cmd *DiffCommand) Execute(args []string) error {
 		return err
 	}
 
-	parsed, err := envfile.ParseFile(cmd.File)
+	envFile := resolveEnvFile(cmd.File, cmd.Environment, cfg)
+	parsed, err := envfile.ParseFile(envFile)
 	if err != nil {
-		return fmt.Errorf("parse %s: %w", cmd.File, err)
+		return fmt.Errorf("parse %s: %w", envFile, err)
 	}
 
 	cl := buildClassifier(cfg, false)

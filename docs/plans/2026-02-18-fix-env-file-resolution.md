@@ -79,9 +79,9 @@ complexity: Low
 - Modify: `cmd/glenv/main.go` (DiffCommand.Execute method)
 
 **Steps:**
-- [ ] After loading config, call `resolveEnvFile()` to get correct file path
-- [ ] Use resolved path in `envfile.ParseFile()` call
-- [ ] Run existing tests: `go test -race ./...` — must pass
+- [x] After loading config, call `resolveEnvFile()` to get correct file path
+- [x] Use resolved path in `envfile.ParseFile()` call
+- [x] Run existing tests: `go test -race ./...` — must pass
 
 ### Task 5: Verification
 
