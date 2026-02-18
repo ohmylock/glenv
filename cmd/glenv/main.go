@@ -150,6 +150,9 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 	})
 
 	printSyncReport(report)
+	if report.Failed > 0 {
+		return fmt.Errorf("%d variable(s) failed to sync", report.Failed)
+	}
 	return nil
 }
 

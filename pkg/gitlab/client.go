@@ -126,6 +126,22 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 			return nil, fmt.Errorf("gitlab: rate limited after %d attempts", attempt+1)
 		}
 
+		// 5xx: transient server errors, retry with backoff.
+		if resp.StatusCode >= 500 {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("gitlab: server error %d", resp.StatusCode)
+			if attempt < c.cfg.RetryMax {
+				sleep := c.backoff(attempt, 0)
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(sleep):
+				}
+				continue
+			}
+			return nil, fmt.Errorf("gitlab: server error %d after %d attempts", resp.StatusCode, attempt+1)
+		}
+
 		return resp, nil
 	}
 

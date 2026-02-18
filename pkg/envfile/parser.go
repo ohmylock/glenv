@@ -122,7 +122,7 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 			continue
 		}
 
-		key := trimmed[:eqIdx]
+		key := strings.TrimRight(trimmed[:eqIdx], " \t")
 		rawValue := trimmed[eqIdx+1:]
 
 		// Check for opening quote to determine if multiline
@@ -149,22 +149,26 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 				}
 			} else if quote == '"' {
 				// Multiline: accumulate lines until an unescaped closing "
+				startLine := lineNum
 				var sb strings.Builder
 				sb.WriteString(inner)
+				terminated := false
 				for scanner.Scan() {
 					lineNum++
 					nextLine := scanner.Text()
 					closeIdx = findUnescapedQuote(nextLine)
 					if closeIdx >= 0 {
-						// Closing quote found.
 						sb.WriteByte('\n')
 						sb.WriteString(nextLine[:closeIdx])
+						terminated = true
 						break
 					}
 					sb.WriteByte('\n')
 					sb.WriteString(nextLine)
 				}
-				// If scanner reached EOF without a closing quote, use whatever was accumulated.
+				if !terminated {
+					return nil, fmt.Errorf("envfile: line %d: unterminated double-quoted value for key %q", startLine, key)
+				}
 				value = unescapeDoubleQuoted(sb.String())
 			} else {
 				// Single-quoted multiline not supported; treat remainder as value
@@ -196,6 +200,19 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("envfile: scan: %w", err)
 	}
+
+	// Deduplicate variables: last occurrence wins.
+	seen := make(map[string]int, len(result.Variables))
+	deduped := make([]Variable, 0, len(result.Variables))
+	for _, v := range result.Variables {
+		if idx, ok := seen[v.Key]; ok {
+			deduped[idx] = v
+		} else {
+			seen[v.Key] = len(deduped)
+			deduped = append(deduped, v)
+		}
+	}
+	result.Variables = deduped
 
 	return result, nil
 }
