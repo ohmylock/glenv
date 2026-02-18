@@ -13,7 +13,7 @@ lint:
 	go vet ./...
 
 install: build
-	cp bin/glenv $(GOPATH)/bin/glenv
+	cp bin/glenv $(shell go env GOPATH)/bin/glenv
 
 release:
 	goreleaser release --clean
