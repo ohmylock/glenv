@@ -405,5 +405,5 @@ func TestDiff_WildcardScope_Update(t *testing.T) {
 
 	require.Len(t, diff.Changes, 1)
 	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind, "wildcard scope should match any target scope")
-	assert.Equal(t, "*", diff.Changes[0].envScope)
+	assert.Equal(t, "production", diff.Changes[0].envScope)
 }

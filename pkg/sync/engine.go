@@ -149,7 +149,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				masked:         cl.Masked,
 				protected:      cl.Protected,
 				raw:            rv.Raw,
-				envScope:       rv.EnvironmentScope,
+				envScope:       envScope,
 			})
 		default:
 			changes = append(changes, Change{
@@ -158,7 +158,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				OldValue:       rv.Value,
 				NewValue:       lv.Value,
 				Classification: classLabel,
-				envScope:       rv.EnvironmentScope,
+				envScope:       envScope,
 			})
 		}
 	}
