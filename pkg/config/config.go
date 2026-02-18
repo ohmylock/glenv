@@ -125,7 +125,7 @@ func resolveConfigPath(override, searchDir string) (string, error) {
 }
 
 // Load builds a Config using the priority chain:
-// defaults → YAML file → env vars → env var expansion.
+// defaults → YAML file → env var expansion → env vars (GITLAB_* override).
 //
 // configPath is the explicit config file path (e.g. from --config flag).
 // If empty, the automatic search chain is used.

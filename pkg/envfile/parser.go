@@ -123,6 +123,9 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 		}
 
 		key := strings.TrimRight(trimmed[:eqIdx], " \t")
+		if key == "" {
+			continue
+		}
 		rawValue := trimmed[eqIdx+1:]
 
 		// Check for opening quote to determine if multiline
@@ -143,6 +146,12 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 				// Single-line quoted value.
 				raw := inner[:closeIdx]
 				if quote == '"' {
+					// Check interpolation on the raw (pre-unescape) content so
+					// that escaped \$ does not falsely trigger the skip.
+					if isInterpolation(raw) {
+						result.Skipped = append(result.Skipped, SkippedLine{Line: lineNum, Key: key, Reason: SkipInterpolation})
+						continue
+					}
 					value = unescapeDoubleQuoted(raw)
 				} else {
 					value = raw
@@ -169,7 +178,13 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 				if !terminated {
 					return nil, fmt.Errorf("envfile: line %d: unterminated double-quoted value for key %q", startLine, key)
 				}
-				value = unescapeDoubleQuoted(sb.String())
+				raw := sb.String()
+				// Check interpolation on pre-unescape content for multiline too.
+				if isInterpolation(raw) {
+					result.Skipped = append(result.Skipped, SkippedLine{Line: startLine, Key: key, Reason: SkipInterpolation})
+					continue
+				}
+				value = unescapeDoubleQuoted(raw)
 			} else {
 				// Single-quoted multiline not supported; treat remainder as value
 				value = inner
@@ -178,7 +193,7 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 			value = rawValue
 		}
 
-		// Check for interpolation
+		// Check for interpolation (unquoted and single-quoted values)
 		if isInterpolation(value) {
 			result.Skipped = append(result.Skipped, SkippedLine{Line: lineNum, Key: key, Reason: SkipInterpolation})
 			continue

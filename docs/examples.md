@@ -6,7 +6,7 @@
 
 ```bash
 # 1. Install glenv
-go install github.com/USERNAME/glenv/cmd/glenv@latest
+go install github.com/ohmylock/glenv/cmd/glenv@latest
 
 # 2. Create a minimal config
 cat > .glenv.yml << 'EOF'
@@ -182,7 +182,7 @@ sync-variables:
   stage: sync-vars
   image: golang:1.23-alpine
   before_script:
-    - go install github.com/USERNAME/glenv/cmd/glenv@latest
+    - go install github.com/ohmylock/glenv/cmd/glenv@latest
   script:
     - glenv sync -f deploy/.env.${CI_ENVIRONMENT_NAME} -e ${CI_ENVIRONMENT_NAME}
   variables:
@@ -214,7 +214,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - run: go install github.com/USERNAME/glenv/cmd/glenv@latest
+      - run: go install github.com/ohmylock/glenv/cmd/glenv@latest
       - run: glenv sync --all
         env:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}

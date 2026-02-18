@@ -25,7 +25,7 @@ Managing GitLab CI/CD variables through the web UI is slow and error-prone. Bash
 
 ```bash
 # Install
-go install github.com/USERNAME/glenv/cmd/glenv@latest
+go install github.com/ohmylock/glenv/cmd/glenv@latest
 
 # Set credentials (or use config file)
 export GITLAB_TOKEN="glpat-xxxxxxxxxxxx"
@@ -43,26 +43,26 @@ glenv diff -f .env.production -e production
 ### From source
 
 ```bash
-go install github.com/USERNAME/glenv/cmd/glenv@latest
+go install github.com/ohmylock/glenv/cmd/glenv@latest
 ```
 
 ### From releases
 
-Download the appropriate binary from [releases](https://github.com/USERNAME/glenv/releases).
+Download the appropriate binary from [releases](https://github.com/ohmylock/glenv/releases).
 
 ### Using Homebrew
 
 ```bash
-brew install USERNAME/apps/glenv
+brew install ohmylock/tools/glenv
 ```
 
 ### Build from source
 
 ```bash
-git clone https://github.com/USERNAME/glenv.git
+git clone https://github.com/ohmylock/glenv.git
 cd glenv
 make build
-# binary: .bin/glenv
+# binary: bin/glenv
 ```
 
 ## Usage
@@ -123,10 +123,10 @@ glenv export -e production -o .env.production.backup
 
 ```bash
 # Delete specific variable
-glenv delete -e production --key OLD_SECRET
+glenv delete -e production OLD_SECRET
 
-# Delete all variables in an environment (requires --force)
-glenv delete -e staging --all --force
+# Delete multiple variables
+glenv delete -e staging KEY1 KEY2 KEY3 --force
 ```
 
 ## Configuration
@@ -190,7 +190,7 @@ classify:
 | `GITLAB_PROJECT_ID` | Project ID or URL-encoded path |
 | `GITLAB_URL` | GitLab instance URL (default: `https://gitlab.com`) |
 
-Config file values take precedence over env vars. CLI flags take precedence over everything.
+Environment variables take precedence over config file values. CLI flags take precedence over everything.
 
 ## How It Works
 
@@ -262,7 +262,6 @@ INTERPOLATED=${OTHER_VAR}/path      # interpolation detected
 | `--project` | | `GITLAB_PROJECT_ID` | Project ID | |
 | `--url` | | `GITLAB_URL` | GitLab URL | `https://gitlab.com` |
 | `--dry-run` | `-n` | | Preview mode | `false` |
-| `--debug` | `-d` | | Debug logging | `false` |
 | `--no-color` | | `NO_COLOR` | Disable colors | `false` |
 | `--workers` | `-w` | | Concurrent workers | `5` |
 | `--rate-limit` | | | Max requests/sec | `10` |
@@ -344,7 +343,7 @@ rate_limit:
 sync-variables:
   image: golang:1.23-alpine
   script:
-    - go install github.com/USERNAME/glenv/cmd/glenv@latest
+    - go install github.com/ohmylock/glenv/cmd/glenv@latest
     - glenv sync -f deploy/.env.${CI_ENVIRONMENT_NAME} -e ${CI_ENVIRONMENT_NAME}
   variables:
     GITLAB_TOKEN: ${DEPLOY_TOKEN}
@@ -370,9 +369,9 @@ make release
 ### Makefile Targets
 
 ```bash
-make build          # compile binary to .bin/glenv
+make build          # compile binary to bin/glenv
 make test           # run tests with race detector and coverage
-make lint           # run golangci-lint
+make lint           # run go vet (static analysis)
 make install        # install to /usr/local/bin
 make release        # goreleaser release
 make release-check  # goreleaser dry-run (no publish)
@@ -383,7 +382,7 @@ make clean          # remove build artifacts
 
 ### Requirements
 
-- Go 1.22+
+- Go 1.25+
 - golangci-lint (for `make lint`)
 - goreleaser (for `make release`)
 

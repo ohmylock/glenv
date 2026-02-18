@@ -39,14 +39,24 @@ var (
 
 // New creates a Classifier by merging built-in rules with user-provided rules.
 // User rules are appended to built-in rules (both patterns and excludes).
+// All patterns are pre-normalized to uppercase for case-insensitive matching.
 func New(userRules Rules) *Classifier {
 	c := &Classifier{
-		maskedPatterns: slices.Concat(builtinMaskedPatterns, userRules.MaskedPatterns),
-		maskedExclude:  slices.Concat(builtinMaskedExclude, userRules.MaskedExclude),
-		filePatterns:   slices.Concat(builtinFilePatterns, userRules.FilePatterns),
-		fileExclude:    slices.Concat(builtinFileExclude, userRules.FileExclude),
+		maskedPatterns: toUpper(slices.Concat(builtinMaskedPatterns, userRules.MaskedPatterns)),
+		maskedExclude:  toUpper(slices.Concat(builtinMaskedExclude, userRules.MaskedExclude)),
+		filePatterns:   toUpper(slices.Concat(builtinFilePatterns, userRules.FilePatterns)),
+		fileExclude:    toUpper(slices.Concat(builtinFileExclude, userRules.FileExclude)),
 	}
 	return c
+}
+
+// toUpper returns a new slice with all strings converted to uppercase.
+func toUpper(ss []string) []string {
+	out := make([]string, len(ss))
+	for i, s := range ss {
+		out[i] = strings.ToUpper(s)
+	}
+	return out
 }
 
 // Classify determines the classification of a variable given its key, value, and
@@ -83,12 +93,12 @@ func (c *Classifier) Classify(key, value, environment string) Classification {
 func (c *Classifier) matchesMasked(key string) bool {
 	upper := strings.ToUpper(key)
 	for _, excl := range c.maskedExclude {
-		if strings.Contains(upper, strings.ToUpper(excl)) {
+		if strings.Contains(upper, excl) {
 			return false
 		}
 	}
 	for _, pat := range c.maskedPatterns {
-		if strings.Contains(upper, strings.ToUpper(pat)) {
+		if strings.Contains(upper, pat) {
 			return true
 		}
 	}
@@ -105,12 +115,12 @@ func (c *Classifier) matchesFile(key, value string) bool {
 
 	upper := strings.ToUpper(key)
 	for _, excl := range c.fileExclude {
-		if strings.Contains(upper, strings.ToUpper(excl)) {
+		if strings.Contains(upper, excl) {
 			return false
 		}
 	}
 	for _, pat := range c.filePatterns {
-		if strings.Contains(upper, strings.ToUpper(pat)) {
+		if strings.Contains(upper, pat) {
 			return true
 		}
 	}
