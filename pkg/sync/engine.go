@@ -103,11 +103,14 @@ func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, pro
 func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult {
 	env := e.opts.Environment
 
-	// Index remote by (key, envScope) compound key for O(1) lookup.
-	// GitLab variables are uniquely identified by (key, environment_scope).
+	// Index remote by key for O(1) lookup.
+	// The caller already filters ListVariables by environment_scope, so all
+	// returned variables belong to the target scope (including wildcard "*"
+	// matches). Keying by Key alone avoids mismatches when the API returns
+	// EnvironmentScope="*" but we look up with a specific scope like "production".
 	remoteMap := make(map[string]gitlab.Variable, len(remote))
 	for _, v := range remote {
-		remoteMap[v.Key+"\x00"+v.EnvironmentScope] = v
+		remoteMap[v.Key] = v
 	}
 
 	localKeys := make(map[string]struct{}, len(local))
@@ -119,7 +122,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 
 		classLabel := buildClassLabel(cl)
 
-		rv, exists := remoteMap[lv.Key+"\x00"+envScope]
+		rv, exists := remoteMap[lv.Key]
 		switch {
 		case !exists:
 			changes = append(changes, Change{

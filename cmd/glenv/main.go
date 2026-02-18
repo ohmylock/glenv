@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -80,8 +81,15 @@ func (cmd *SyncCommand) Execute(args []string) error {
 		if len(cfg.Environments) == 0 {
 			return fmt.Errorf("--all requires environments to be defined in config file")
 		}
+		envNames := make([]string, 0, len(cfg.Environments))
+		for name := range cfg.Environments {
+			envNames = append(envNames, name)
+		}
+		sort.Strings(envNames)
+
 		var firstErr error
-		for envName, envCfg := range cfg.Environments {
+		for _, envName := range envNames {
+			envCfg := cfg.Environments[envName]
 			envFile := envCfg.File
 			if envFile == "" {
 				envFile = cmd.File
@@ -123,15 +131,15 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 
 	diff := engine.Diff(appCtx, parsed.Variables, remote, envScope)
 
-	if !cmd.Force && !cmd.global.DryRun {
-		printDiff(diff)
+	printDiff(diff)
+	if cmd.global.DryRun {
+		return nil
+	}
+	if !cmd.Force {
 		if !confirm("Apply these changes?") {
 			fmt.Println("Aborted.")
 			return nil
 		}
-	} else if cmd.global.DryRun {
-		printDiff(diff)
-		return nil
 	}
 
 	fmt.Printf("\nSyncing: %s → project %s (%s)\n", envFile, cfg.GitLab.ProjectID, envScope)
@@ -347,7 +355,7 @@ func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Clien
 		BaseURL:             cfg.GitLab.URL,
 		Token:               cfg.GitLab.Token,
 		RequestsPerSecond:   rps,
-		Burst:               int(rps),
+		Burst:               max(1, int(rps)),
 		RetryMax:            cfg.RateLimit.RetryMax,
 		RetryInitialBackoff: cfg.RateLimit.RetryInitialBackoff,
 	}

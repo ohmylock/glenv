@@ -38,7 +38,7 @@ func NewClient(cfg ClientConfig) *Client {
 		cfg.RequestsPerSecond = 10
 	}
 	if cfg.Burst <= 0 {
-		cfg.Burst = int(cfg.RequestsPerSecond)
+		cfg.Burst = max(1, int(cfg.RequestsPerSecond))
 	}
 	if cfg.RetryMax <= 0 {
 		cfg.RetryMax = 3
