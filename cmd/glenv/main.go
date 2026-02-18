@@ -133,6 +133,7 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 
 	printDiff(diff)
 	if cmd.global.DryRun {
+		printDiffSummary(diff)
 		return nil
 	}
 	// Only prompt when --delete-missing would actually delete variables.
@@ -200,6 +201,7 @@ func (cmd *DiffCommand) Execute(args []string) error {
 
 	diff := engine.Diff(appCtx, parsed.Variables, remote, cmd.Environment)
 	printDiff(diff)
+	printDiffSummary(diff)
 	return nil
 }
 
@@ -259,12 +261,14 @@ func (cmd *ExportCommand) Execute(args []string) error {
 	}
 
 	out := io.Writer(os.Stdout)
+	var outFile *os.File
 	if cmd.Output != "" {
 		f, err := os.OpenFile(cmd.Output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		if err != nil {
 			return fmt.Errorf("create output file: %w", err)
 		}
 		defer f.Close()
+		outFile = f
 		out = f
 	}
 
@@ -284,10 +288,15 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		if strings.ContainsAny(val, " \t\n\"'\\$") {
 			// Escape backslash, double-quote, and $ inside the quoted block
 			// so the output is safe for shell sourcing.
-			val = `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`, `$`, `\$`).Replace(val) + `"`
+			val = `"` + strings.NewReplacer(`\`, `\\`, "\n", `\n`, `"`, `\"`, `$`, `\$`).Replace(val) + `"`
 		}
 		if _, err := fmt.Fprintf(out, "%s=%s\n", v.Key, val); err != nil {
 			return fmt.Errorf("write variable %s: %w", v.Key, err)
+		}
+	}
+	if outFile != nil {
+		if err := outFile.Close(); err != nil {
+			return fmt.Errorf("close output file: %w", err)
 		}
 	}
 	return nil
@@ -435,10 +444,8 @@ func printResult(r glsync.Result) {
 		yellow.Printf("  ↻ Updated:   %-30s%s\n", r.Change.Key, tags)
 	case glsync.ChangeDelete:
 		red.Printf("  - Deleted:   %s\n", r.Change.Key)
-	case glsync.ChangeUnchanged:
-		cyan.Printf("  = Unchanged: %s\n", r.Change.Key)
-	case glsync.ChangeSkipped:
-		gray.Printf("  ⊘ Skipped:   %-30s (%s)\n", r.Change.Key, r.Change.SkipReason)
+	case glsync.ChangeUnchanged, glsync.ChangeSkipped:
+		// Already shown in printDiff; don't repeat during apply.
 	}
 }
 
@@ -461,6 +468,26 @@ func printDiff(diff glsync.DiffResult) {
 			gray.Printf("⊘ %s (%s)\n", ch.Key, ch.SkipReason)
 		}
 	}
+}
+
+func printDiffSummary(diff glsync.DiffResult) {
+	var created, updated, deleted, unchanged, skipped int
+	for _, ch := range diff.Changes {
+		switch ch.Kind {
+		case glsync.ChangeCreate:
+			created++
+		case glsync.ChangeUpdate:
+			updated++
+		case glsync.ChangeDelete:
+			deleted++
+		case glsync.ChangeUnchanged:
+			unchanged++
+		case glsync.ChangeSkipped:
+			skipped++
+		}
+	}
+	fmt.Printf("\nCreated: %d | Updated: %d | Deleted: %d | Unchanged: %d | Skipped: %d\n",
+		created, updated, deleted, unchanged, skipped)
 }
 
 const separator = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
