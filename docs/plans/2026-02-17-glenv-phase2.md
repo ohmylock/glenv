@@ -219,7 +219,7 @@ complexity: Large
 - Modify: `pkg/sync/engine_test.go`
 
 **Steps:**
-- [ ] Write tests:
+- [x] Write tests:
   - `TestApply_DryRun` — DryRun=true, verify no HTTP requests made, report shows correct counts
   - `TestApply_Concurrent` — 20 changes, 5 workers, run with `-race` → all changes processed, no races
   - `TestApply_CreateUpdateDelete` — mix of 3 types → verify correct API calls made (mock server counts)
@@ -227,14 +227,14 @@ complexity: Large
   - `TestApply_ErrorHandling` — mock server returns 500 for one key → Failed=1, others succeed
   - `TestApplyWithCallback` — verify callback called for each result in real-time
   - `TestApply_EmptyDiff` — no actionable changes → immediate return with zero counts
-- [ ] Implement `applyOne(ctx context.Context, task Change) Result`:
+- [x] Implement `applyOne(ctx context.Context, task Change) Result`:
   - Switch on task.Kind:
     - ChangeCreate → `e.client.CreateVariable(ctx, e.projectID, createRequest)`
     - ChangeUpdate → `e.client.UpdateVariable(ctx, e.projectID, updateRequest)`
     - ChangeDelete → `e.client.DeleteVariable(ctx, e.projectID, task.Key, e.opts.Environment)`
   - Map Classification fields to CreateRequest fields
   - Return `Result{Change: task, Error: err}`
-- [ ] Implement `Apply(ctx context.Context, diff DiffResult) SyncReport`:
+- [x] Implement `Apply(ctx context.Context, diff DiffResult) SyncReport`:
   - Filter out ChangeUnchanged from actionable tasks
   - If DryRun: return report with counts but no API calls
   - Create `taskCh chan Change` (buffered), `resultCh chan Result` (buffered)
@@ -244,11 +244,11 @@ complexity: Large
   - Collect results: increment Created/Updated/Deleted/Failed counters
   - Add Unchanged count from diff
   - Set Duration, APICalls
-- [ ] Implement `ApplyWithCallback(ctx context.Context, diff DiffResult, cb func(Result)) SyncReport`:
+- [x] Implement `ApplyWithCallback(ctx context.Context, diff DiffResult, cb func(Result)) SyncReport`:
   - Same as Apply but calls `cb(result)` for each result as it arrives (before collecting)
   - Enables streaming output in CLI
-- [ ] Verify graceful shutdown: context cancellation causes `limiter.Wait(ctx)` to return error → workers exit → partial results collected
-- [ ] Run `go test -race ./pkg/sync/` — all tests pass
+- [x] Verify graceful shutdown: context cancellation causes `limiter.Wait(ctx)` to return error → workers exit → partial results collected
+- [x] Run `go test -race ./pkg/sync/` — all tests pass
 
 ---
 

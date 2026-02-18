@@ -298,6 +298,58 @@ func TestApplyWithCallback(t *testing.T) {
 	assert.Len(t, results, 2)
 }
 
+func TestApply_CreateUpdateDelete(t *testing.T) {
+	var creates, updates, deletes atomic.Int32
+	fake := &fakeClient{
+		createFn: func(ctx context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+			creates.Add(1)
+			return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
+		},
+		updateFn: func(ctx context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+			updates.Add(1)
+			return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
+		},
+		deleteFn: func(ctx context.Context, _ string, key, _ string) error {
+			deletes.Add(1)
+			return nil
+		},
+	}
+	engine := newTestEngine(fake, Options{Workers: 3})
+
+	diff := DiffResult{Changes: []Change{
+		{Kind: ChangeCreate, Key: "NEW_VAR", NewValue: "v1"},
+		{Kind: ChangeUpdate, Key: "CHANGED_VAR", OldValue: "old", NewValue: "new"},
+		{Kind: ChangeDelete, Key: "OLD_VAR"},
+	}}
+
+	report := engine.Apply(context.Background(), diff)
+
+	assert.Equal(t, int32(1), creates.Load(), "should call CreateVariable once")
+	assert.Equal(t, int32(1), updates.Load(), "should call UpdateVariable once")
+	assert.Equal(t, int32(1), deletes.Load(), "should call DeleteVariable once")
+	assert.Equal(t, 1, report.Created)
+	assert.Equal(t, 1, report.Updated)
+	assert.Equal(t, 1, report.Deleted)
+	assert.Equal(t, 0, report.Failed)
+	assert.Equal(t, 3, report.APICalls)
+}
+
+func TestApply_EmptyDiff(t *testing.T) {
+	fake := &fakeClient{}
+	engine := newTestEngine(fake, Options{Workers: 3})
+
+	diff := DiffResult{Changes: []Change{}}
+
+	report := engine.Apply(context.Background(), diff)
+
+	assert.Equal(t, int32(0), fake.calls.Load(), "no API calls for empty diff")
+	assert.Equal(t, 0, report.Created)
+	assert.Equal(t, 0, report.Updated)
+	assert.Equal(t, 0, report.Deleted)
+	assert.Equal(t, 0, report.Failed)
+	assert.Equal(t, 0, report.APICalls)
+}
+
 func TestDiff_ClassificationAttached(t *testing.T) {
 	engine := newTestEngine(&fakeClient{}, Options{})
 
