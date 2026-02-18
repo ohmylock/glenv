@@ -102,8 +102,6 @@ func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, pro
 // Diff computes the set of changes needed to bring remote in sync with local.
 // envScope is passed as the environment_scope when creating/updating variables.
 func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult {
-	env := e.opts.Environment
-
 	// Index remote by key for O(1) lookup.
 	// The caller already filters ListVariables by environment_scope, so all
 	// returned variables belong to the target scope (including wildcard "*"
@@ -119,7 +117,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 
 	for _, lv := range local {
 		localKeys[lv.Key] = struct{}{}
-		cl := e.classifier.Classify(lv.Key, lv.Value, env)
+		cl := e.classifier.Classify(lv.Key, lv.Value, envScope)
 
 		classLabel := buildClassLabel(cl)
 

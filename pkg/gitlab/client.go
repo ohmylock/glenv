@@ -156,7 +156,11 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 
 // backoff calculates the sleep duration for a retry attempt.
 // base * 2^attempt + jitter(0..500ms) + extra.
+// attempt is capped at 30 to prevent integer overflow in the shift.
 func (c *Client) backoff(attempt int, extra time.Duration) time.Duration {
+	if attempt > 30 {
+		attempt = 30
+	}
 	base := c.cfg.RetryInitialBackoff
 	exp := time.Duration(1 << uint(attempt))
 	jitter := time.Duration(rand.Int63n(int64(500 * time.Millisecond)))
