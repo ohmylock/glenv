@@ -44,8 +44,8 @@ type GlobalOptions struct {
 	URL       string  `long:"url" env:"GITLAB_URL" description:"GitLab base URL"`
 	DryRun    bool    `long:"dry-run" description:"Print planned changes without applying them"`
 	NoColor   bool    `long:"no-color" description:"Disable colored output"`
-	Workers   int     `long:"workers" description:"Number of concurrent workers" default:"5"`
-	RateLimit float64 `long:"rate-limit" description:"Max API requests per second" default:"10"`
+	Workers   int     `long:"workers" description:"Number of concurrent workers"`
+	RateLimit float64 `long:"rate-limit" description:"Max API requests per second"`
 }
 
 // VersionCommand prints the build version.
@@ -109,7 +109,7 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 
 	cl := buildClassifier(cfg, cmd.NoAutoClassify)
 	opts := glsync.Options{
-		Workers:       cmd.global.Workers,
+		Workers:       resolveWorkers(cmd.global, cfg),
 		DryRun:        cmd.global.DryRun,
 		DeleteMissing: cmd.DeleteMissing,
 		Environment:   envScope,
@@ -166,7 +166,7 @@ func (cmd *DiffCommand) Execute(args []string) error {
 
 	cl := buildClassifier(cfg, false)
 	opts := glsync.Options{
-		Workers:     cmd.global.Workers,
+		Workers:     resolveWorkers(cmd.global, cfg),
 		Environment: cmd.Environment,
 	}
 	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
@@ -251,9 +251,10 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		// Wrap in double quotes if the value contains special characters.
 		// Use double-quote wrapping (not %q / Go escaping) so the output
 		// is valid dotenv format readable by shell and glenv's own parser.
-		if strings.ContainsAny(val, " \t\n\"'\\") {
-			// Escape only backslash and double-quote inside the quoted block.
-			val = `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(val) + `"`
+		if strings.ContainsAny(val, " \t\n\"'\\$") {
+			// Escape backslash, double-quote, and $ inside the quoted block
+			// so the output is safe for shell sourcing.
+			val = `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`, `$`, `\$`).Replace(val) + `"`
 		}
 		if _, err := fmt.Fprintf(out, "%s=%s\n", v.Key, val); err != nil {
 			return fmt.Errorf("write variable %s: %w", v.Key, err)
@@ -306,6 +307,17 @@ func (cmd *DeleteCommand) Execute(args []string) error {
 
 // --- Helpers ---
 
+// resolveWorkers returns the number of workers: CLI flag if set, else config, else default 5.
+func resolveWorkers(global *GlobalOptions, cfg *config.Config) int {
+	if global.Workers > 0 {
+		return global.Workers
+	}
+	if cfg.RateLimit.MaxConcurrent > 0 {
+		return cfg.RateLimit.MaxConcurrent
+	}
+	return 5
+}
+
 func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Client, error) {
 	cfg, err := config.Load(global.Config)
 	if err != nil {
@@ -327,16 +339,17 @@ func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Clien
 		return nil, nil, err
 	}
 
+	rps := global.RateLimit
+	if rps <= 0 {
+		rps = cfg.RateLimit.RequestsPerSecond
+	}
 	clientCfg := gitlab.ClientConfig{
 		BaseURL:             cfg.GitLab.URL,
 		Token:               cfg.GitLab.Token,
-		RequestsPerSecond:   global.RateLimit,
-		Burst:               int(global.RateLimit),
+		RequestsPerSecond:   rps,
+		Burst:               int(rps),
 		RetryMax:            cfg.RateLimit.RetryMax,
 		RetryInitialBackoff: cfg.RateLimit.RetryInitialBackoff,
-	}
-	if clientCfg.RequestsPerSecond <= 0 {
-		clientCfg.RequestsPerSecond = cfg.RateLimit.RequestsPerSecond
 	}
 
 	return cfg, gitlab.NewClient(clientCfg), nil
