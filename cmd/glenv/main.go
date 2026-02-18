@@ -135,10 +135,19 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 	if cmd.global.DryRun {
 		return nil
 	}
-	if !cmd.Force {
-		if !confirm("Apply these changes?") {
-			fmt.Println("Aborted.")
-			return nil
+	// Only prompt when --delete-missing would actually delete variables.
+	if cmd.DeleteMissing && !cmd.Force {
+		deleteCount := 0
+		for _, ch := range diff.Changes {
+			if ch.Kind == glsync.ChangeDelete {
+				deleteCount++
+			}
+		}
+		if deleteCount > 0 {
+			if !confirm(fmt.Sprintf("Delete %d variable(s)?", deleteCount)) {
+				fmt.Println("Aborted.")
+				return nil
+			}
 		}
 	}
 
@@ -158,9 +167,10 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 
 // DiffCommand shows what would change without applying.
 type DiffCommand struct {
-	File        string `short:"f" long:"file" description:"Path to .env file" default:".env"`
-	Environment string `short:"e" long:"environment" description:"GitLab environment scope" default:"*"`
-	global      *GlobalOptions
+	File          string `short:"f" long:"file" description:"Path to .env file" default:".env"`
+	Environment   string `short:"e" long:"environment" description:"GitLab environment scope" default:"*"`
+	DeleteMissing bool   `long:"delete-missing" description:"Show variables that would be deleted"`
+	global        *GlobalOptions
 }
 
 func (cmd *DiffCommand) Execute(args []string) error {
@@ -177,8 +187,9 @@ func (cmd *DiffCommand) Execute(args []string) error {
 
 	cl := buildClassifier(cfg, false)
 	opts := glsync.Options{
-		Workers:     resolveWorkers(cmd.global, cfg),
-		Environment: cmd.Environment,
+		Workers:       resolveWorkers(cmd.global, cfg),
+		DeleteMissing: cmd.DeleteMissing,
+		Environment:   cmd.Environment,
 	}
 	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
 
@@ -258,6 +269,14 @@ func (cmd *ExportCommand) Execute(args []string) error {
 	}
 
 	for _, v := range vars {
+		// Skip file-type variables — their values are raw file contents
+		// (certificates, PEM keys) that produce invalid .env lines.
+		if v.VariableType == "file" {
+			if _, err := fmt.Fprintf(out, "# %s (file type, skipped)\n", v.Key); err != nil {
+				return fmt.Errorf("write variable %s: %w", v.Key, err)
+			}
+			continue
+		}
 		val := v.Value
 		// Wrap in double quotes if the value contains special characters.
 		// Use double-quote wrapping (not %q / Go escaping) so the output
