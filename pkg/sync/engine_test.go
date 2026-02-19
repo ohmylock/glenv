@@ -295,7 +295,14 @@ func TestApplyWithCallback(t *testing.T) {
 	})
 
 	assert.Equal(t, 2, report.Created)
-	assert.Len(t, results, 2)
+	require.Len(t, results, 2)
+
+	keys := map[string]bool{results[0].Change.Key: true, results[1].Change.Key: true}
+	assert.True(t, keys["A"] && keys["B"], "callback must receive results for both keys")
+	for _, r := range results {
+		assert.Nil(t, r.Error, "callback results must have no error")
+		assert.Equal(t, ChangeCreate, r.Change.Kind)
+	}
 }
 
 func TestApply_CreateUpdateDelete(t *testing.T) {
@@ -376,6 +383,22 @@ func TestDiff_ClassificationAttached(t *testing.T) {
 	require.Len(t, diff.Changes, 1)
 	assert.Equal(t, ChangeCreate, diff.Changes[0].Kind)
 	assert.Contains(t, diff.Changes[0].Classification, "masked")
+}
+
+func TestDiff_ClassificationProtectedOnly(t *testing.T) {
+	// production env + secret key with short value → protected but not masked
+	// (masked requires value length >= 8; "abc" is 3 chars)
+	cl := classifier.New(classifier.Rules{})
+	engine := NewEngine(&fakeClient{}, cl, Options{}, "proj-1")
+
+	local := []envfile.Variable{{Key: "DB_SECRET", Value: "abc"}}
+	remote := []gitlab.Variable{}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Contains(t, diff.Changes[0].Classification, "protected")
+	assert.NotContains(t, diff.Changes[0].Classification, "masked")
 }
 
 func TestDiff_ScopeMismatch_CreateNew(t *testing.T) {

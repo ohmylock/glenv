@@ -279,6 +279,14 @@ func clearGitLabEnv(t *testing.T) {
 	}
 }
 
+func TestLoad_InvalidYAML(t *testing.T) {
+	path := writeTempConfig(t, "invalid: yaml: {bad")
+
+	_, err := Load(path)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "parse")
+}
+
 func writeTempConfig(t *testing.T, content string) string {
 	t.Helper()
 	f, err := os.CreateTemp("", "glenv-*.yml")
