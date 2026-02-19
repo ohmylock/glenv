@@ -405,5 +405,33 @@ func TestDiff_WildcardScope_Update(t *testing.T) {
 
 	require.Len(t, diff.Changes, 1)
 	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind, "wildcard scope should match any target scope")
-	assert.Equal(t, "production", diff.Changes[0].envScope)
+	// envScope must equal rv.EnvironmentScope ("*") so UpdateVariable uses
+	// filter[environment_scope]=* and correctly locates the wildcard variable.
+	assert.Equal(t, "*", diff.Changes[0].envScope)
+}
+
+func TestApply_WildcardScope_UpdatePassesCorrectScope(t *testing.T) {
+	// Verify that when a wildcard-scoped remote variable is updated,
+	// UpdateVariable is called with EnvironmentScope="*" (not the target scope).
+	// Using "production" as filter would return 404 because the variable has scope "*".
+	var capturedScope string
+	fake := &fakeClient{
+		updateFn: func(_ context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+			capturedScope = req.EnvironmentScope
+			return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
+		},
+	}
+	engine := newTestEngine(fake, Options{Workers: 1})
+
+	local := []envfile.Variable{{Key: "COMMON_VAR", Value: "new_value"}}
+	remote := []gitlab.Variable{{Key: "COMMON_VAR", Value: "old_value", EnvironmentScope: "*"}}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+	require.Len(t, diff.Changes, 1)
+	require.Equal(t, ChangeUpdate, diff.Changes[0].Kind)
+
+	report := engine.Apply(context.Background(), diff)
+
+	require.Equal(t, 0, report.Failed)
+	assert.Equal(t, "*", capturedScope, "UpdateVariable must use the remote variable's actual scope as filter")
 }

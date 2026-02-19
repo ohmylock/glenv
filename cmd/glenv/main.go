@@ -115,7 +115,6 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 		Workers:       resolveWorkers(cmd.global, cfg),
 		DryRun:        cmd.global.DryRun,
 		DeleteMissing: cmd.DeleteMissing,
-		Environment:   envScope,
 	}
 	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
 
@@ -186,7 +185,6 @@ func (cmd *DiffCommand) Execute(args []string) error {
 	opts := glsync.Options{
 		Workers:       resolveWorkers(cmd.global, cfg),
 		DeleteMissing: cmd.DeleteMissing,
-		Environment:   cmd.Environment,
 	}
 	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
 

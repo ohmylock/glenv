@@ -67,7 +67,6 @@ type Options struct {
 	Workers       int
 	DryRun        bool
 	DeleteMissing bool
-	Environment   string
 }
 
 // gitlabClient is the subset of the gitlab.Client API used by the engine.
@@ -149,7 +148,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				masked:         cl.Masked,
 				protected:      cl.Protected,
 				raw:            rv.Raw,
-				envScope:       envScope,
+				envScope:       rv.EnvironmentScope,
 			})
 		default:
 			changes = append(changes, Change{
@@ -158,7 +157,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				OldValue:       rv.Value,
 				NewValue:       lv.Value,
 				Classification: classLabel,
-				envScope:       envScope,
+				envScope:       rv.EnvironmentScope,
 			})
 		}
 	}
