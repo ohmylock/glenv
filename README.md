@@ -371,7 +371,7 @@ make release
 ```bash
 make build          # compile binary to bin/glenv
 make test           # run tests with race detector and coverage
-make lint           # run go vet (static analysis)
+make lint           # run golangci-lint (fallback: go vet)
 make install        # install to /usr/local/bin
 make release        # goreleaser release
 make release-check  # goreleaser dry-run (no publish)
