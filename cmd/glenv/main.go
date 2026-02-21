@@ -283,10 +283,10 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		// Wrap in double quotes if the value contains special characters.
 		// Use double-quote wrapping (not %q / Go escaping) so the output
 		// is valid dotenv format readable by shell and glenv's own parser.
-		if strings.ContainsAny(val, " \t\n\"'\\$") {
-			// Escape backslash, double-quote, and $ inside the quoted block
+		if strings.ContainsAny(val, " \t\n\r\"'\\$") {
+			// Escape backslash, newlines, carriage returns, double-quote, and $
 			// so the output is safe for shell sourcing.
-			val = `"` + strings.NewReplacer(`\`, `\\`, "\n", `\n`, `"`, `\"`, `$`, `\$`).Replace(val) + `"`
+			val = `"` + strings.NewReplacer(`\`, `\\`, "\r", `\r`, "\n", `\n`, `"`, `\"`, `$`, `\$`).Replace(val) + `"`
 		}
 		if _, err := fmt.Fprintf(out, "%s=%s\n", v.Key, val); err != nil {
 			return fmt.Errorf("write variable %s: %w", v.Key, err)
@@ -410,7 +410,7 @@ func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Clien
 
 func buildClassifier(cfg *config.Config, noAutoClassify bool) *classifier.Classifier {
 	if noAutoClassify {
-		return classifier.New(classifier.Rules{})
+		return classifier.NewEmpty()
 	}
 	return classifier.New(classifier.Rules{
 		MaskedPatterns: cfg.Classify.MaskedPatterns,
@@ -426,15 +426,23 @@ func setupColor(noColor bool) {
 	}
 }
 
+// stdinScanner is a shared scanner for os.Stdin. A single instance is required
+// so that buffered data from previous Scan() calls is not lost between calls
+// to confirm() (e.g. when --all --delete-missing prompts multiple environments).
+var stdinScanner = bufio.NewScanner(os.Stdin)
+
 func confirm(prompt string) bool {
 	fmt.Printf("%s [y/N] ", prompt)
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		ans := strings.TrimSpace(strings.ToLower(scanner.Text()))
+	if stdinScanner.Scan() {
+		ans := strings.TrimSpace(strings.ToLower(stdinScanner.Text()))
 		return ans == "y" || ans == "yes"
 	}
-	if err := scanner.Err(); err != nil {
+	if err := stdinScanner.Err(); err != nil {
 		fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
+	} else {
+		// EOF on stdin (non-interactive / CI environment): treat as rejection and
+		// surface a clear message so the caller knows to use --force.
+		fmt.Fprintln(os.Stderr, "stdin is not interactive; pass --force to skip confirmation")
 	}
 	return false
 }

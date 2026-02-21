@@ -72,10 +72,18 @@ func TestClassify_Secret_LongValue_Masked(t *testing.T) {
 	assert.True(t, got.Masked)
 }
 
-func TestClassify_DSN_LongValue_Masked(t *testing.T) {
+func TestClassify_DSN_MaskableValue_Masked(t *testing.T) {
 	c := defaultClassifier()
-	got := c.Classify("DATABASE_DSN", "postgres://user:pass@host/db", "staging")
+	// DSN with maskable chars only (no / or special chars)
+	got := c.Classify("DATABASE_DSN", "postgres:user@host", "staging")
 	assert.True(t, got.Masked)
+}
+
+func TestClassify_DSN_NonMaskableValue_NotMasked(t *testing.T) {
+	c := defaultClassifier()
+	// DSN with non-maskable chars (space is not allowed in masked values)
+	got := c.Classify("DATABASE_DSN", "postgres://user:p ss@host/db", "staging")
+	assert.False(t, got.Masked, "value contains space which is not maskable by GitLab")
 }
 
 func TestClassify_Token_Multiline_NotMasked(t *testing.T) {
@@ -220,11 +228,20 @@ func TestClassify_TableDriven(t *testing.T) {
 			wantVarType: "env_var",
 		},
 		{
-			name:        "token long enough",
+			name:        "token maskable value",
 			key:         "GITHUB_TOKEN",
-			value:       "ghp_longsecrettoken123",
+			value:       "ghpXlongsecrettoken123", // no underscore, maskable
 			env:         "staging",
 			wantMasked:  true,
+			wantProtected: false,
+			wantVarType: "env_var",
+		},
+		{
+			name:        "token non-maskable value",
+			key:         "GITHUB_TOKEN",
+			value:       "ghp!longsecrettoken123", // exclamation not allowed in masked
+			env:         "staging",
+			wantMasked:  false,
 			wantProtected: false,
 			wantVarType: "env_var",
 		},
@@ -309,4 +326,35 @@ func TestClassify_MatchCaseInsensitive_Masked(t *testing.T) {
 	// key pattern matching is case-insensitive
 	got := c.Classify("db_password", "supersecretvalue", "staging")
 	assert.True(t, got.Masked)
+}
+
+// --- NewEmpty ---
+
+func TestNewEmpty_NoMasking(t *testing.T) {
+	c := NewEmpty()
+	// Even a key that would normally be masked by built-in rules is not masked.
+	got := c.Classify("API_KEY", "longsecretvalue123", "staging")
+	assert.False(t, got.Masked)
+}
+
+func TestNewEmpty_NoFileType(t *testing.T) {
+	c := NewEmpty()
+	// Even a key that would normally be classified as file is not.
+	got := c.Classify("PRIVATE_KEY", "somevalue", "staging")
+	assert.Equal(t, "env_var", got.VarType)
+}
+
+func TestNewEmpty_NotProtected(t *testing.T) {
+	c := NewEmpty()
+	got := c.Classify("DB_PASSWORD", "supersecretvalue", "production")
+	assert.False(t, got.Masked)
+	assert.False(t, got.Protected)
+}
+
+func TestNewEmpty_PEMValueNotFileType(t *testing.T) {
+	// --no-auto-classify (NewEmpty) must disable PEM content detection too.
+	c := NewEmpty()
+	got := c.Classify("ANY_VAR", "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----", "staging")
+	assert.Equal(t, "env_var", got.VarType, "PEM detection must be disabled for empty classifier")
+	assert.False(t, got.Protected)
 }

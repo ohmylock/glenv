@@ -384,3 +384,54 @@ func TestParseReader_TableDriven(t *testing.T) {
 		})
 	}
 }
+
+// --- Escaped interpolation in double-quoted values ---
+
+func TestParseReader_EscapedDollar_NotSkipped(t *testing.T) {
+	// \${LITERAL} inside double quotes is an escaped dollar, not interpolation.
+	input := `KEY="\${LITERAL}"` + "\n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	require.Len(t, result.Variables, 1, "escaped \\$ should not trigger interpolation skip")
+	assert.Equal(t, "${LITERAL}", result.Variables[0].Value)
+}
+
+func TestParseReader_UnescapedDollar_Skipped(t *testing.T) {
+	// ${VAR} inside double quotes is real interpolation and should be skipped.
+	input := `KEY="${VAR}"` + "\n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	assert.Empty(t, result.Variables)
+	require.Len(t, result.Skipped, 1)
+	assert.Equal(t, SkipInterpolation, result.Skipped[0].Reason)
+}
+
+func TestParseReader_MixedEscapedAndUnescaped_Skipped(t *testing.T) {
+	// Value has both \${ESCAPED} and ${REAL} — the unescaped one means skip.
+	input := `KEY="\${A} ${B}"` + "\n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	assert.Empty(t, result.Variables)
+	require.Len(t, result.Skipped, 1)
+	assert.Equal(t, SkipInterpolation, result.Skipped[0].Reason)
+}
+
+func TestParseReader_EscapedCarriageReturn_Roundtrip(t *testing.T) {
+	// \r inside a double-quoted value must be decoded to CR so that
+	// export → import is a lossless round-trip.
+	input := "KEY=\"value\\rwith\\rcr\"\n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	require.Len(t, result.Variables, 1)
+	assert.Equal(t, "value\rwith\rcr", result.Variables[0].Value)
+}
+
+// --- Unterminated single-quoted values ---
+
+func TestParseReader_UnterminatedSingleQuote_Error(t *testing.T) {
+	input := "KEY='hello world\n"
+	_, err := ParseReader(strings.NewReader(input))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unterminated single-quoted value")
+	assert.Contains(t, err.Error(), "KEY")
+}

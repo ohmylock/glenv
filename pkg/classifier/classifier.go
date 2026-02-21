@@ -50,6 +50,12 @@ func New(userRules Rules) *Classifier {
 	return c
 }
 
+// NewEmpty creates a Classifier with no patterns at all (not even built-ins).
+// Use this when auto-classification must be fully disabled.
+func NewEmpty() *Classifier {
+	return &Classifier{}
+}
+
 // toUpper returns a new slice with all strings converted to uppercase.
 func toUpper(ss []string) []string {
 	out := make([]string, len(ss))
@@ -75,8 +81,10 @@ func (c *Classifier) Classify(key, value, environment string) Classification {
 		return cl
 	}
 
-	// Masked: key matches secret pattern AND value >= 8 chars AND single-line.
-	if c.matchesMasked(key) && len(value) >= 8 && !strings.Contains(value, "\n") {
+	// Masked: key matches secret pattern AND value is maskable by GitLab.
+	// GitLab masked variables must be >=8 chars, single-line, and contain only
+	// characters from the set: a-zA-Z0-9 and @:.~
+	if c.matchesMasked(key) && isMaskable(value) {
 		cl.Masked = true
 	}
 
@@ -86,6 +94,26 @@ func (c *Classifier) Classify(key, value, environment string) Classification {
 	}
 
 	return cl
+}
+
+// isMaskable checks if a value can be masked by GitLab.
+// GitLab requires: >=8 chars, single-line with no spaces, and only chars from
+// [a-zA-Z0-9_:@-.+~=/] (alphanumeric plus @, :, ., ~, _, -, +, =, /).
+func isMaskable(value string) bool {
+	if len(value) < 8 {
+		return false
+	}
+	for _, r := range value {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '_' || r == ':' || r == '@' || r == '-' || r == '+' || r == '.' || r == '~' || r == '=' || r == '/':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // matchesMasked returns true if the key matches a masked pattern and is NOT in
@@ -106,10 +134,11 @@ func (c *Classifier) matchesMasked(key string) bool {
 }
 
 // matchesFile returns true if the key matches a file pattern (and is NOT excluded)
-// OR if the value contains a PEM header.
+// OR if the value contains a PEM header (only when patterns are configured).
 func (c *Classifier) matchesFile(key, value string) bool {
-	// PEM detection in value is always a file, regardless of key.
-	if strings.Contains(value, "-----BEGIN") {
+	// PEM detection in value: only when the classifier has file patterns.
+	// NewEmpty() sets no patterns, so --no-auto-classify fully disables this too.
+	if len(c.filePatterns) > 0 && strings.Contains(value, "-----BEGIN") {
 		return true
 	}
 

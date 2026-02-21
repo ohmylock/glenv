@@ -61,6 +61,24 @@ func isInterpolation(value string) bool {
 	return strings.Contains(value, "${")
 }
 
+// containsUnescapedInterpolation returns true if s contains an unescaped ${.
+// A ${ preceded by an odd number of backslashes is considered escaped and
+// does not count as interpolation.
+func containsUnescapedInterpolation(s string) bool {
+	for i := 0; i < len(s)-1; i++ {
+		if s[i] == '$' && s[i+1] == '{' {
+			backslashes := 0
+			for j := i - 1; j >= 0 && s[j] == '\\'; j-- {
+				backslashes++
+			}
+			if backslashes%2 == 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ParseFile opens the file at path and parses it as a .env file.
 func ParseFile(path string) (*ParseResult, error) {
 	f, err := os.Open(path)
@@ -129,7 +147,9 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 		rawValue := trimmed[eqIdx+1:]
 
 		// Check for opening quote to determine if multiline
+		// dqProcessed is true when interpolation was already checked pre-unescape for double-quoted values.
 		var value string
+		dqProcessed := false
 		if len(rawValue) > 0 && (rawValue[0] == '"' || rawValue[0] == '\'') {
 			quote := rawValue[0]
 			inner := rawValue[1:]
@@ -146,13 +166,14 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 				// Single-line quoted value.
 				raw := inner[:closeIdx]
 				if quote == '"' {
-					// Check interpolation on the raw (pre-unescape) content so
-					// that escaped \$ does not falsely trigger the skip.
-					if isInterpolation(raw) {
+					// Use unescaped interpolation check so \${LITERAL} is not
+					// treated as interpolation (only unescaped ${ counts).
+					if containsUnescapedInterpolation(raw) {
 						result.Skipped = append(result.Skipped, SkippedLine{Line: lineNum, Key: key, Reason: SkipInterpolation})
 						continue
 					}
 					value = unescapeDoubleQuoted(raw)
+					dqProcessed = true
 				} else {
 					value = raw
 				}
@@ -179,22 +200,23 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 					return nil, fmt.Errorf("envfile: line %d: unterminated double-quoted value for key %q", startLine, key)
 				}
 				raw := sb.String()
-				// Check interpolation on pre-unescape content for multiline too.
-				if isInterpolation(raw) {
+				// Use unescaped check for multiline too: \${LITERAL} is not interpolation.
+				if containsUnescapedInterpolation(raw) {
 					result.Skipped = append(result.Skipped, SkippedLine{Line: startLine, Key: key, Reason: SkipInterpolation})
 					continue
 				}
 				value = unescapeDoubleQuoted(raw)
+				dqProcessed = true
 			} else {
-				// Single-quoted multiline not supported; treat remainder as value
-				value = inner
+				// Unterminated single-quoted value: fail fast (consistent with double-quoted).
+				return nil, fmt.Errorf("envfile: line %d: unterminated single-quoted value for key %q", lineNum, key)
 			}
 		} else {
 			value = rawValue
 		}
 
-		// Check for interpolation (unquoted and single-quoted values)
-		if isInterpolation(value) {
+		// Check for interpolation (unquoted and single-quoted values; double-quoted already checked pre-unescape).
+		if !dqProcessed && isInterpolation(value) {
 			result.Skipped = append(result.Skipped, SkippedLine{Line: lineNum, Key: key, Reason: SkipInterpolation})
 			continue
 		}
@@ -251,7 +273,7 @@ func findUnescapedQuote(s string) int {
 }
 
 // unescapeDoubleQuoted processes escape sequences inside a double-quoted value:
-// \\ → \, \" → ", \$ → $, \n → newline
+// \\ → \, \" → ", \$ → $, \n → newline, \r → carriage return
 func unescapeDoubleQuoted(s string) string {
-	return strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\$`, `$`, `\n`, "\n").Replace(s)
+	return strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\$`, `$`, `\n`, "\n", `\r`, "\r").Replace(s)
 }
