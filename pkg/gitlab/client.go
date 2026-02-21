@@ -154,8 +154,11 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	return nil, fmt.Errorf("gitlab: request failed after %d attempts", c.cfg.RetryMax+1)
 }
 
+// maxBackoff is the upper bound for any computed backoff duration.
+const maxBackoff = 5 * time.Minute
+
 // backoff calculates the sleep duration for a retry attempt.
-// base * 2^attempt + jitter(0..500ms) + extra.
+// base * 2^attempt + jitter(0..500ms) + extra, capped at maxBackoff.
 // attempt is capped at 30 to prevent integer overflow in the shift.
 func (c *Client) backoff(attempt int, extra time.Duration) time.Duration {
 	if attempt > 30 {
@@ -163,19 +166,31 @@ func (c *Client) backoff(attempt int, extra time.Duration) time.Duration {
 	}
 	base := c.cfg.RetryInitialBackoff
 	exp := time.Duration(1 << uint(attempt))
+	// Guard against int64 overflow: if base alone exceeds maxBackoff, clamp early.
+	if base > maxBackoff {
+		base = maxBackoff
+	}
+	d := base*exp + extra
+	if d > maxBackoff || d < 0 { // d < 0 catches any residual overflow
+		d = maxBackoff
+	}
 	jitter := time.Duration(rand.Int63n(int64(500 * time.Millisecond)))
-	return base*exp + jitter + extra
+	result := d + jitter
+	if result > maxBackoff {
+		result = maxBackoff
+	}
+	return result
 }
 
 // parseRetryAfter reads the Retry-After header and returns the duration to wait.
-// Returns 0 if the header is absent or unparseable.
+// Returns 0 if the header is absent, unparseable, or negative.
 func (c *Client) parseRetryAfter(resp *http.Response) time.Duration {
 	header := resp.Header.Get("Retry-After")
 	if header == "" {
 		return 0
 	}
 	secs, err := strconv.ParseFloat(header, 64)
-	if err != nil {
+	if err != nil || secs < 0 {
 		return 0
 	}
 	return time.Duration(secs * float64(time.Second))

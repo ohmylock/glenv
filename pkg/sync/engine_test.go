@@ -416,6 +416,43 @@ func TestDiff_ScopeMismatch_CreateNew(t *testing.T) {
 	assert.Equal(t, "production", diff.Changes[0].envScope)
 }
 
+func TestDiff_WildcardAndExactScope_ExactWins(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Remote has BOTH a wildcard entry and a production-specific entry for the same key.
+	// The wildcard value differs from local; the production value matches local.
+	// Expected: UNCHANGED (exact-scope entry wins over wildcard in remoteMap).
+	local := []envfile.Variable{{Key: "DB_URL", Value: "prod-value"}}
+	remote := []gitlab.Variable{
+		{Key: "DB_URL", Value: "global-value", VariableType: "env_var", EnvironmentScope: "*"},
+		{Key: "DB_URL", Value: "prod-value", VariableType: "env_var", EnvironmentScope: "production"},
+	}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUnchanged, diff.Changes[0].Kind,
+		"exact-scope entry should win: prod-value == prod-value => UNCHANGED")
+	assert.Equal(t, "production", diff.Changes[0].envScope)
+}
+
+func TestDiff_WildcardAndExactScope_WildcardFirst_ExactWins(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Same as above but wildcard comes second in the slice — exact still wins.
+	local := []envfile.Variable{{Key: "DB_URL", Value: "prod-value"}}
+	remote := []gitlab.Variable{
+		{Key: "DB_URL", Value: "prod-value", VariableType: "env_var", EnvironmentScope: "production"},
+		{Key: "DB_URL", Value: "global-value", VariableType: "env_var", EnvironmentScope: "*"},
+	}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUnchanged, diff.Changes[0].Kind,
+		"exact-scope entry should still win when it appears first in the slice")
+}
+
 func TestDiff_WildcardScope_Update(t *testing.T) {
 	engine := newTestEngine(&fakeClient{}, Options{})
 

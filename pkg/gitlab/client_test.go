@@ -113,15 +113,11 @@ func TestDo_Retry_NetworkError(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
-	// Either succeeds on retry or returns error after 3 attempts
-	if err == nil {
-		resp.Body.Close()
-		// Should have retried
-		assert.GreaterOrEqual(t, atomic.LoadInt32(&callCount), int32(2))
-	} else {
-		// Exhausted retries
-		assert.GreaterOrEqual(t, atomic.LoadInt32(&callCount), int32(2))
-	}
+	// Server drops on calls 1 and 2, succeeds on call 3. With RetryMax=3 the
+	// client should succeed on the 3rd attempt.
+	require.NoError(t, err, "should succeed on 3rd attempt")
+	resp.Body.Close()
+	assert.Equal(t, int32(3), atomic.LoadInt32(&callCount), "should attempt exactly 3 times")
 }
 
 func TestDo_Retry_429_RetryAfter(t *testing.T) {
@@ -290,12 +286,11 @@ func TestDo_RetryWithBody(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(context.Background(), req)
-	if err == nil {
-		resp.Body.Close()
-	}
-	// Verify that retries happened and body was re-sent
+	require.NoError(t, err, "should succeed after retry with body replay")
+	resp.Body.Close()
+	// Verify that a retry actually occurred (call 1 dropped, call 2 succeeded).
 	calls := atomic.LoadInt32(&callCount)
-	assert.GreaterOrEqual(t, calls, int32(1))
+	assert.Equal(t, int32(2), calls, "should have retried exactly once with body replayed")
 }
 
 func TestDo_ContextCancel(t *testing.T) {

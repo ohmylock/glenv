@@ -104,11 +104,15 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 	// Index remote by key for O(1) lookup.
 	// The caller already filters ListVariables by environment_scope, so all
 	// returned variables belong to the target scope (including wildcard "*"
-	// matches). Keying by Key alone avoids mismatches when the API returns
-	// EnvironmentScope="*" but we look up with a specific scope like "production".
+	// matches). When both a wildcard and an exact-scope variable exist for the
+	// same key, prefer the exact-scope entry so that scopeMatch and value
+	// comparison operate on the precise variable rather than the wildcard one.
 	remoteMap := make(map[string]gitlab.Variable, len(remote))
 	for _, v := range remote {
-		remoteMap[v.Key] = v
+		existing, ok := remoteMap[v.Key]
+		if !ok || existing.EnvironmentScope == "*" {
+			remoteMap[v.Key] = v
+		}
 	}
 
 	localKeys := make(map[string]struct{}, len(local))
