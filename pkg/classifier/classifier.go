@@ -135,19 +135,22 @@ func (c *Classifier) matchesMasked(key string) bool {
 
 // matchesFile returns true if the key matches a file pattern (and is NOT excluded)
 // OR if the value contains a PEM header (only when patterns are configured).
+// The exclude list takes precedence over both key-pattern and PEM-value detection.
 func (c *Classifier) matchesFile(key, value string) bool {
-	// PEM detection in value: only when the classifier has file patterns.
-	// NewEmpty() sets no patterns, so --no-auto-classify fully disables this too.
-	if len(c.filePatterns) > 0 && strings.Contains(value, "-----BEGIN") {
-		return true
-	}
-
 	upper := strings.ToUpper(key)
 	for _, excl := range c.fileExclude {
 		if strings.Contains(upper, excl) {
 			return false
 		}
 	}
+
+	// PEM detection in value: only when the classifier has file patterns and
+	// the key is not excluded. NewEmpty() sets no patterns, so
+	// --no-auto-classify fully disables this too.
+	if len(c.filePatterns) > 0 && strings.Contains(value, "-----BEGIN") {
+		return true
+	}
+
 	for _, pat := range c.filePatterns {
 		if strings.Contains(upper, pat) {
 			return true

@@ -132,6 +132,13 @@ func TestClassify_CertURL_NotFileType(t *testing.T) {
 	assert.Equal(t, "env_var", got.VarType)
 }
 
+func TestClassify_CertURL_WithPEMValue_NotFileType(t *testing.T) {
+	// _URL keys are in fileExclude; exclude list must take precedence over PEM detection.
+	c := defaultClassifier()
+	got := c.Classify("CERT_URL", "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----", "staging")
+	assert.Equal(t, "env_var", got.VarType, "fileExclude (_URL) must override PEM value detection")
+}
+
 func TestClassify_PEMValueDetected_FileType(t *testing.T) {
 	// Value contains -----BEGIN → file type regardless of key
 	c := defaultClassifier()
