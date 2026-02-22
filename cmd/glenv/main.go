@@ -278,6 +278,7 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		out = f
 	}
 
+	replacer := strings.NewReplacer(`\`, `\\`, "\r", `\r`, "\n", `\n`, `"`, `\"`, `$`, `\$`)
 	for _, v := range vars {
 		// Skip file-type variables — their values are raw file contents
 		// (certificates, PEM keys) that produce invalid .env lines.
@@ -294,7 +295,7 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		if strings.ContainsAny(val, " \t\n\r\"'\\$") {
 			// Escape backslash, newlines, carriage returns, double-quote, and $
 			// so the output is safe for shell sourcing.
-			val = `"` + strings.NewReplacer(`\`, `\\`, "\r", `\r`, "\n", `\n`, `"`, `\"`, `$`, `\$`).Replace(val) + `"`
+			val = `"` + replacer.Replace(val) + `"`
 		}
 		if _, err := fmt.Fprintf(out, "%s=%s\n", v.Key, val); err != nil {
 			return fmt.Errorf("write variable %s: %w", v.Key, err)
@@ -329,7 +330,11 @@ func (cmd *DeleteCommand) Execute(args []string) error {
 	}
 
 	if !cmd.Force {
-		fmt.Printf("Delete %d variable(s): %s\n", len(args), strings.Join(args, ", "))
+		scope := cmd.Environment
+		if scope == "" {
+			scope = "*"
+		}
+		fmt.Printf("Delete %d variable(s) from scope %q: %s\n", len(args), scope, strings.Join(args, ", "))
 		if !confirm("Confirm deletion?") {
 			fmt.Println("Aborted.")
 			return nil

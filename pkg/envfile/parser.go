@@ -150,6 +150,7 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 		// dqProcessed is true when interpolation was already checked pre-unescape for double-quoted values.
 		var value string
 		dqProcessed := false
+		sqProcessed := false
 		if len(rawValue) > 0 && (rawValue[0] == '"' || rawValue[0] == '\'') {
 			quote := rawValue[0]
 			inner := rawValue[1:]
@@ -176,6 +177,7 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 					dqProcessed = true
 				} else {
 					value = raw
+					sqProcessed = true
 				}
 			} else if quote == '"' {
 				// Multiline: accumulate lines until an unescaped closing "
@@ -215,8 +217,21 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 			value = rawValue
 		}
 
-		// Check for interpolation (unquoted and single-quoted values; double-quoted already checked pre-unescape).
-		if !dqProcessed && isInterpolation(value) {
+		// Check for interpolation.
+		// Double-quoted values are already checked pre-unescape (dqProcessed).
+		// Single-quoted values use containsUnescapedInterpolation: a backslash before
+		// ${} in single-quoted context is a literal backslash, not an escape sequence,
+		// but the intent is the same — treat \\ as non-interpolation.
+		// Unquoted values use isInterpolation (no escape processing applies).
+		var skipInterp bool
+		if !dqProcessed {
+			if sqProcessed {
+				skipInterp = containsUnescapedInterpolation(value)
+			} else {
+				skipInterp = isInterpolation(value)
+			}
+		}
+		if skipInterp {
 			result.Skipped = append(result.Skipped, SkippedLine{Line: lineNum, Key: key, Reason: SkipInterpolation})
 			continue
 		}

@@ -173,8 +173,13 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 
 	// Remote-only vars: delete if DeleteMissing is enabled.
 	if e.opts.DeleteMissing {
+		toDelete := make(map[string]struct{})
 		for _, rv := range remote {
 			if _, inLocal := localKeys[rv.Key]; !inLocal {
+				if _, seen := toDelete[rv.Key]; seen {
+					continue
+				}
+				toDelete[rv.Key] = struct{}{}
 				changes = append(changes, Change{
 					Kind:     ChangeDelete,
 					Key:      rv.Key,

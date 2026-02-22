@@ -180,6 +180,15 @@ func TestParseReader_WhitespaceAroundEquals(t *testing.T) {
 	assert.Equal(t, " VALUE", result.Variables[0].Value)
 }
 
+func TestParseReader_TrailingWhitespace_Stripped(t *testing.T) {
+	// Trailing whitespace on unquoted values must be stripped by TrimSpace.
+	input := "KEY=VALUE   \n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	require.Len(t, result.Variables, 1)
+	assert.Equal(t, "VALUE", result.Variables[0].Value)
+}
+
 func TestParseReader_QuotedValueWithNewlines_MultilineMode(t *testing.T) {
 	// PEM block in double quotes
 	input := `PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----

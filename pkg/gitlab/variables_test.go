@@ -294,3 +294,57 @@ func TestListVariables_URLEncoding(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "staging", parsed.Get("filter[environment_scope]"))
 }
+
+func TestListVariables_DecodeError(t *testing.T) {
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `[bad json`)
+	})
+
+	_, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "decode")
+}
+
+func TestCreateVariable_DecodeError(t *testing.T) {
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, `not-json{`)
+	})
+
+	_, err := client.CreateVariable(context.Background(), "99", CreateRequest{Key: "X"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "decode")
+}
+
+func TestUpdateVariable_DecodeError(t *testing.T) {
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `garbage`)
+	})
+
+	_, err := client.UpdateVariable(context.Background(), "10", CreateRequest{Key: "X"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "decode")
+}
+
+func TestListVariables_NextPage_Zero(t *testing.T) {
+	var callCount int32
+
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Next-Page", "0")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode([]Variable{{Key: "A", EnvironmentScope: "*"}})
+	})
+
+	vars, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), callCount, "pagination should stop when X-Next-Page is 0")
+	require.Len(t, vars, 1)
+	assert.Equal(t, "A", vars[0].Key)
+}

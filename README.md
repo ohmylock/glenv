@@ -1,12 +1,51 @@
 <p align="center">
-  <h1 align="center">glenv</h1>
+  <img src="https://img.shields.io/badge/go-1.25+-00ADD8?style=flat&logo=go" alt="Go version 1.25 or higher">
+  <a href="https://github.com/ohmylock/glenv/actions/workflows/ci.yml"><img src="https://github.com/ohmylock/glenv/actions/workflows/ci.yml/badge.svg" alt="CI Build Status"></a>
+  <a href="https://github.com/ohmylock/glenv/releases"><img src="https://img.shields.io/github/v/release/ohmylock/glenv?include_prereleases" alt="Latest Release Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://goreportcard.com/report/github.com/ohmylock/glenv"><img src="https://goreportcard.com/badge/github.com/ohmylock/glenv" alt="Go Report Card Score"></a>
 </p>
 
-<p align="center">Fast, concurrent CLI tool for managing GitLab CI/CD variables</p>
+<h1 align="center">glenv</h1>
 
-*glenv reads `.env` files and syncs them to GitLab projects via the CI/CD Variables API. It auto-detects variable types (masked, protected, file), runs concurrent uploads with built-in rate limiting, and supports multiple environments — all from a single binary.*
+<p align="center">
+  <b>Sync .env files to GitLab CI/CD variables — bulk import, export, and manage environment variables via API</b><br>
+  <i>Fast, concurrent CLI tool for GitLab secrets management and dotenv synchronization</i>
+</p>
 
-Managing GitLab CI/CD variables through the web UI is slow and error-prone. Bash scripts work but are sequential and fragile. glenv solves this with concurrent API calls, smart variable classification, and a safe diff-before-sync workflow.
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#faq">FAQ</a>
+</p>
+
+---
+
+## What is glenv?
+
+**glenv** is a command-line tool that synchronizes `.env` files with GitLab CI/CD variables. It solves the problem of managing GitLab environment variables at scale — bulk import, export, diff, and sync hundreds of variables in seconds using the GitLab API.
+
+Instead of clicking through the GitLab web UI or writing fragile bash scripts, glenv provides:
+- **Bulk operations** — import/export entire `.env` files with one command
+- **Smart classification** — auto-detects masked, protected, and file-type variables
+- **Safe workflow** — preview changes with diff before applying
+- **Concurrent sync** — parallel API calls with built-in rate limiting
+- **Multi-environment** — manage production, staging, and custom environments from config
+
+### Why glenv over alternatives?
+
+| Problem | glenv Solution |
+|---------|----------------|
+| GitLab UI is slow for many variables | Bulk sync hundreds of variables in seconds |
+| Bash scripts are fragile and sequential | Concurrent workers with retry and rate limiting |
+| No preview before changes | Diff command shows create/update/delete before sync |
+| Manual variable classification | Auto-detects masked/protected/file from key patterns |
+| Different configs per environment | Single YAML config for all environments |
+
+**glenv** is written in Go — single static binary, no runtime dependencies, works on Linux, macOS, and Windows.
 
 ## Features
 
@@ -95,10 +134,10 @@ glenv diff -f .env.production -e production
 
 Output:
 ```
-  + DB_HOST = "postgres.internal"              (create)
-  ~ API_KEY = "sk-***" → "sk-***"             (update, masked)
-  - OLD_VAR                                    (delete, not in .env)
-  = LOG_LEVEL = "INFO"                         (unchanged)
++ DB_HOST=postgres.internal
+~ API_KEY: *** → ***
+- OLD_VAR
+= LOG_LEVEL
 ```
 
 ### List Variables
@@ -118,6 +157,8 @@ Download GitLab variables to a local `.env` file:
 ```bash
 glenv export -e production -o .env.production.backup
 ```
+
+> **Note:** File-type variables (certificates, PEM keys) are excluded from the output and replaced with a comment `# KEY (file type, skipped)`. Use `glenv list` to see their presence.
 
 ### Delete Variables
 
@@ -156,10 +197,8 @@ rate_limit:
 environments:
   production:
     file: deploy/gitlab-envs/.env.production
-    protected: true                           # mark secret vars as protected
   staging:
     file: deploy/gitlab-envs/.env.staging
-    protected: false
 
 # Custom classification rules (extend built-in defaults)
 classify:
@@ -180,6 +219,7 @@ classify:
   file_exclude:                               # exceptions (NOT file type)
     - "_PATH"
     - "_DIR"
+    - "_URL"
 ```
 
 ### Environment Variables
@@ -189,6 +229,7 @@ classify:
 | `GITLAB_TOKEN` | GitLab Personal Access Token (scope: `api`) |
 | `GITLAB_PROJECT_ID` | Project ID or URL-encoded path |
 | `GITLAB_URL` | GitLab instance URL (default: `https://gitlab.com`) |
+| `NO_COLOR` | Disable colored output when set to any non-empty value (standard convention) |
 
 Environment variables take precedence over config file values. CLI flags take precedence over everything.
 
@@ -209,7 +250,7 @@ glenv auto-detects variable properties:
 
 | Property | Condition |
 |----------|-----------|
-| **masked** | Key matches secret pattern (`_TOKEN`, `SECRET`, `PASSWORD`, etc.) AND value is >= 8 characters AND value is single-line |
+| **masked** | Key matches secret pattern (`_TOKEN`, `SECRET`, `PASSWORD`, etc.) AND value is >= 8 characters AND value is single-line AND value contains only `[a-zA-Z0-9_:@-.+~=/]` characters |
 | **protected** | Environment is `production` AND key matches secret pattern |
 | **file type** | Key matches file pattern (`PRIVATE_KEY`, `_CERT`, `_PEM`) OR value contains PEM headers (`-----BEGIN`) |
 
@@ -444,6 +485,31 @@ glenv sync --config project-b.yml --all
 Standard `.env` format: `KEY=VALUE`, with support for single/double quotes, multiline quoted values, and comments. Placeholders (`your_`, `CHANGE_ME`) and variable interpolation (`${VAR}`) are detected and skipped. See [.env File Format](#env-file-format) for details.
 </details>
 
+## Alternatives
+
+| Tool | Language | Features |
+|------|----------|----------|
+| **glenv** | Go | Concurrent sync, auto-classification, rate limiting, diff preview |
+| [GlabEnv](https://github.com/arisnacg/nodejs-glabenv) | Node.js | Basic sync/export |
+| [gitlab-dotenv](https://github.com/apicore-engineering/gitlab-dotenv) | Python | Variable management |
+| [glab variable](https://docs.gitlab.com/cli/variable/) | Go | Official CLI (single variable ops) |
+
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) before submitting a PR.
+
 ## License
 
 MIT License — see [LICENSE](LICENSE) file.
+
+---
+
+<p align="center">
+  Made with ❤️ for the DevOps community
+</p>
+
+<!-- SEO Keywords: gitlab ci/cd variables, gitlab environment variables, sync .env to gitlab,
+dotenv gitlab sync, gitlab variables cli tool, gitlab secrets management, gitlab variable import export,
+bulk gitlab variables, gitlab api variables cli, cicd configuration management, devops secrets automation,
+gitlab self-hosted variables, manage gitlab env variables, gitlab variable migration,
+export gitlab variables to env file, import env file to gitlab, gitlab ci variables bulk update -->

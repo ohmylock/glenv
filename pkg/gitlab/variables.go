@@ -85,7 +85,8 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 		page = opts.Page
 	}
 
-	for {
+	const maxPages = 1000
+	for pageNum := 0; pageNum < maxPages; pageNum++ {
 		q := url.Values{}
 		q.Set("per_page", strconv.Itoa(perPage))
 		q.Set("page", strconv.Itoa(page))
@@ -120,16 +121,16 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 
 		nextPage := resp.Header.Get("X-Next-Page")
 		if nextPage == "" || nextPage == "0" {
-			break
+			return all, nil
 		}
 		n, err := strconv.Atoi(nextPage)
 		if err != nil || n <= page {
-			break
+			return all, nil
 		}
 		page = n
 	}
 
-	return all, nil
+	return nil, fmt.Errorf("gitlab: list variables: exceeded %d pages; possible pagination loop", maxPages)
 }
 
 // CreateVariable creates a new CI/CD variable for the given project.
