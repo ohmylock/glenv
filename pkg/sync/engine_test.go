@@ -232,9 +232,10 @@ func TestApply_ContextCancel(t *testing.T) {
 	report := <-done
 
 	// The 2 in-flight tasks return ctx error, the remaining 18 are skipped at
-	// the pre-check. All end up in Failed.
-	assert.Greater(t, report.Failed, 0, "should have failures from cancellation")
-	assert.Less(t, report.Created, 20, "should be a partial report")
+	// the pre-check. All 20 tasks must be accounted for.
+	assert.GreaterOrEqual(t, report.Failed, 2, "both in-flight workers should report failure")
+	assert.Equal(t, 0, report.Created, "no tasks should complete successfully after cancellation")
+	assert.Equal(t, 20, report.Failed+report.Created, "all 20 tasks must be accounted for")
 }
 
 func TestApply_ErrorHandling(t *testing.T) {

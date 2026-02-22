@@ -12,8 +12,10 @@ import (
 )
 
 // readErrorBody reads up to 512 bytes from the response body for error diagnostics.
+// It drains any remaining bytes so the HTTP transport can reuse the connection.
 func readErrorBody(resp *http.Response) string {
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 512))
+	_, _ = io.Copy(io.Discard, resp.Body)
 	if err != nil || len(body) == 0 {
 		return ""
 	}
@@ -128,43 +130,6 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 	}
 
 	return all, nil
-}
-
-// GetVariable fetches a single variable by key. Returns nil, nil if not found (404).
-func (c *Client) GetVariable(ctx context.Context, projectID, key, envScope string) (*Variable, error) {
-	q := url.Values{}
-	if envScope != "" {
-		q.Set("filter[environment_scope]", envScope)
-	}
-
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, url.PathEscape(projectID), url.PathEscape(key))
-	if len(q) > 0 {
-		apiURL += "?" + q.Encode()
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("gitlab: get variable: build request: %w", err)
-	}
-
-	resp, err := c.Do(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("gitlab: get variable: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitlab: get variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
-	}
-
-	var v Variable
-	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
-		return nil, fmt.Errorf("gitlab: get variable: decode: %w", err)
-	}
-	return &v, nil
 }
 
 // CreateVariable creates a new CI/CD variable for the given project.

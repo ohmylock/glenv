@@ -315,16 +315,22 @@ func TestBackoff_Exponential(t *testing.T) {
 	}
 	client := NewClient(cfg)
 
-	// Verify backoff returns positive durations and grows with attempt number.
-	// With base=10ms: attempt 0 → 10ms + jitter, attempt 1 → 20ms + jitter, attempt 2 → 40ms + jitter.
-	// Jitter is 0-500ms, so absolute ordering isn't guaranteed.
-	// We verify both the minimum (base * 2^attempt) and that extra is added.
+	// With base=10ms: attempt 0 → 10ms*1=10ms, attempt 1 → 10ms*2=20ms, attempt 2 → 10ms*4=40ms (+ jitter).
+	// Jitter is 0-500ms so we only verify lower bounds and growth direction.
 	b0 := client.backoff(0, 0)
-	b0WithExtra := client.backoff(0, 1*time.Second)
+	b1 := client.backoff(1, 0)
 
-	assert.Greater(t, b0, time.Duration(0))
-	// Extra should add to duration
-	assert.Greater(t, b0WithExtra, b0)
+	assert.GreaterOrEqual(t, b0, 10*time.Millisecond, "attempt 0 should be at least base")
+	assert.GreaterOrEqual(t, b1, 20*time.Millisecond, "attempt 1 should be at least 2*base")
+	assert.GreaterOrEqual(t, b1, b0, "backoff should grow with attempt number")
+
+	// Extra duration is added on top.
+	b0WithExtra := client.backoff(0, 1*time.Second)
+	assert.Greater(t, b0WithExtra, b0, "extra duration should increase backoff")
+
+	// High attempt number is capped at maxBackoff.
+	bHigh := client.backoff(30, 0)
+	assert.LessOrEqual(t, bHigh, maxBackoff, "backoff must not exceed maxBackoff")
 }
 
 func TestParseRetryAfter_Seconds(t *testing.T) {
@@ -345,4 +351,26 @@ func TestParseRetryAfter_Missing(t *testing.T) {
 	resp := &http.Response{Header: http.Header{}}
 	d := client.parseRetryAfter(resp)
 	assert.Equal(t, time.Duration(0), d)
+}
+
+func TestParseRetryAfter_Negative(t *testing.T) {
+	client := NewClient(ClientConfig{RetryInitialBackoff: 1 * time.Millisecond})
+	resp := &http.Response{Header: http.Header{}}
+	resp.Header.Set("Retry-After", "-5")
+	assert.Equal(t, time.Duration(0), client.parseRetryAfter(resp))
+}
+
+func TestParseRetryAfter_NonNumeric(t *testing.T) {
+	client := NewClient(ClientConfig{RetryInitialBackoff: 1 * time.Millisecond})
+	resp := &http.Response{Header: http.Header{}}
+	resp.Header.Set("Retry-After", "not-a-number")
+	assert.Equal(t, time.Duration(0), client.parseRetryAfter(resp))
+}
+
+func TestParseRetryAfter_ExceedsMaxBackoff(t *testing.T) {
+	client := NewClient(ClientConfig{RetryInitialBackoff: 1 * time.Millisecond})
+	resp := &http.Response{Header: http.Header{}}
+	resp.Header.Set("Retry-After", "99999999")
+	d := client.parseRetryAfter(resp)
+	assert.LessOrEqual(t, d, maxBackoff, "Retry-After value must be capped at maxBackoff")
 }

@@ -435,3 +435,31 @@ func TestParseReader_UnterminatedSingleQuote_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "unterminated single-quoted value")
 	assert.Contains(t, err.Error(), "KEY")
 }
+
+func TestParseReader_UnterminatedDoubleQuote_Error(t *testing.T) {
+	input := "KEY=\"hello world\n"
+	_, err := ParseReader(strings.NewReader(input))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unterminated double-quoted value")
+	assert.Contains(t, err.Error(), "KEY")
+}
+
+func TestParseReader_DuplicateKey_LastWins(t *testing.T) {
+	input := "KEY=first\nKEY=second\n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	require.Len(t, result.Variables, 1)
+	assert.Equal(t, "second", result.Variables[0].Value)
+	assert.Equal(t, 2, result.Variables[0].Line)
+}
+
+func TestParseReader_SingleQuotedInterpolation_Skipped(t *testing.T) {
+	// Single-quoted values with ${} are treated as interpolation and skipped,
+	// matching the unquoted value behavior (isInterpolation check).
+	input := "KEY='${VAR}'\n"
+	result, err := ParseReader(strings.NewReader(input))
+	require.NoError(t, err)
+	assert.Empty(t, result.Variables)
+	require.Len(t, result.Skipped, 1)
+	assert.Equal(t, "KEY", result.Skipped[0].Key)
+}

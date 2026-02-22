@@ -233,7 +233,9 @@ func (cmd *ListCommand) Execute(args []string) error {
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", v.Key, v.VariableType, v.EnvironmentScope, masked, protected)
 	}
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("flush output: %w", err)
+	}
 	fmt.Printf("\nTotal: %d variables\n", len(vars))
 	return nil
 }

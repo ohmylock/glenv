@@ -194,51 +194,40 @@ func TestDeleteVariable_WithScope(t *testing.T) {
 	assert.Equal(t, "production", receivedScope)
 }
 
-func TestGetVariable_NotFound(t *testing.T) {
+func TestCreateVariable_Error(t *testing.T) {
 	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/api/v4/projects/5/variables/MISSING", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, `{"message":"409 Variable already exists"}`)
+	})
+
+	_, err := client.CreateVariable(context.Background(), "99", CreateRequest{Key: "DUP"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "409")
+}
+
+func TestUpdateVariable_Error(t *testing.T) {
+	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprint(w, `{"message":"404 Variable Not Found"}`)
 	})
 
-	result, err := client.GetVariable(context.Background(), "5", "MISSING", "")
-	require.NoError(t, err)
-	assert.Nil(t, result)
+	_, err := client.UpdateVariable(context.Background(), "10", CreateRequest{Key: "MISSING"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "404")
 }
 
-func TestGetVariable_Found(t *testing.T) {
-	v := Variable{
-		Key:              "FOUND_VAR",
-		Value:            "found_value",
-		VariableType:     "env_var",
-		EnvironmentScope: "*",
-	}
-
+func TestDeleteVariable_UnexpectedStatus(t *testing.T) {
 	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/api/v4/projects/5/variables/FOUND_VAR", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(v)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"message":"500 Internal Server Error"}`)
 	})
 
-	result, err := client.GetVariable(context.Background(), "5", "FOUND_VAR", "")
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	assert.Equal(t, "FOUND_VAR", result.Key)
-	assert.Equal(t, "found_value", result.Value)
-}
-
-func TestGetVariable_WithScope(t *testing.T) {
-	var receivedScope string
-
-	_, client := setupMockServer(t, func(w http.ResponseWriter, r *http.Request) {
-		receivedScope = r.URL.Query().Get("filter[environment_scope]")
-		w.WriteHeader(http.StatusNotFound)
-	})
-
-	_, err := client.GetVariable(context.Background(), "5", "X", "production")
-	require.NoError(t, err)
-	assert.Equal(t, "production", receivedScope)
+	err := client.DeleteVariable(context.Background(), "7", "MY_VAR", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "500")
 }
 
 func TestFilterByScope_ExactMatch(t *testing.T) {

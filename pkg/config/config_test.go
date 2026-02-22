@@ -274,8 +274,7 @@ func TestResolveConfigPath_NoFileFound(t *testing.T) {
 func clearGitLabEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{"GITLAB_TOKEN", "GITLAB_PROJECT_ID", "GITLAB_URL"} {
-		t.Setenv(key, "") // t.Setenv restores on cleanup
-		os.Unsetenv(key)
+		t.Setenv(key, "") // set to empty so applyEnvVars skips it; t.Setenv restores original on cleanup
 	}
 }
 

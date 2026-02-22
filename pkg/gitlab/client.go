@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"strings"
@@ -174,7 +174,7 @@ func (c *Client) backoff(attempt int, extra time.Duration) time.Duration {
 	if d > maxBackoff || d < 0 { // d < 0 catches any residual overflow
 		d = maxBackoff
 	}
-	jitter := time.Duration(rand.Int63n(int64(500 * time.Millisecond)))
+	jitter := time.Duration(rand.Int64N(int64(500 * time.Millisecond)))
 	result := d + jitter
 	if result > maxBackoff {
 		result = maxBackoff
@@ -193,5 +193,9 @@ func (c *Client) parseRetryAfter(resp *http.Response) time.Duration {
 	if err != nil || secs < 0 {
 		return 0
 	}
-	return time.Duration(secs * float64(time.Second))
+	d := time.Duration(secs * float64(time.Second))
+	if d > maxBackoff {
+		return maxBackoff
+	}
+	return d
 }
