@@ -241,6 +241,52 @@ func TestGetVariable_WithScope(t *testing.T) {
 	assert.Equal(t, "production", receivedScope)
 }
 
+func TestFilterByScope_ExactMatch(t *testing.T) {
+	vars := []Variable{
+		{Key: "A", EnvironmentScope: "production"},
+		{Key: "B", EnvironmentScope: "staging"},
+		{Key: "C", EnvironmentScope: "*"},
+	}
+	got := FilterByScope(vars, "production")
+	require.Len(t, got, 2)
+	assert.Equal(t, "A", got[0].Key)
+	assert.Equal(t, "C", got[1].Key)
+}
+
+func TestFilterByScope_WildcardTarget(t *testing.T) {
+	vars := []Variable{
+		{Key: "A", EnvironmentScope: "production"},
+		{Key: "B", EnvironmentScope: "*"},
+		{Key: "C", EnvironmentScope: "staging"},
+	}
+	got := FilterByScope(vars, "*")
+	require.Len(t, got, 1)
+	assert.Equal(t, "B", got[0].Key)
+}
+
+func TestFilterByScope_EmptyScope(t *testing.T) {
+	vars := []Variable{
+		{Key: "A", EnvironmentScope: "production"},
+		{Key: "B", EnvironmentScope: "*"},
+	}
+	got := FilterByScope(vars, "")
+	require.Len(t, got, 2)
+}
+
+func TestFilterByScope_NoMatches(t *testing.T) {
+	vars := []Variable{
+		{Key: "A", EnvironmentScope: "staging"},
+		{Key: "B", EnvironmentScope: "development"},
+	}
+	got := FilterByScope(vars, "production")
+	assert.Empty(t, got)
+}
+
+func TestFilterByScope_EmptyInput(t *testing.T) {
+	got := FilterByScope(nil, "production")
+	assert.Empty(t, got)
+}
+
 func TestListVariables_URLEncoding(t *testing.T) {
 	// Verify filter[environment_scope] is correctly URL-encoded
 	var rawQuery string

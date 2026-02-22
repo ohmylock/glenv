@@ -31,6 +31,27 @@ type Variable struct {
 	Raw              bool   `json:"raw"`
 }
 
+// FilterByScope filters variables by environment scope on the client side.
+// GitLab API does not reliably filter by environment_scope on the LIST endpoint
+// (see https://gitlab.com/gitlab-org/gitlab/-/issues/343169), so we do it ourselves.
+//
+// Filtering rules:
+//   - empty scope: return all variables unfiltered
+//   - scope == "*": return only variables with EnvironmentScope == "*"
+//   - specific scope: return variables with EnvironmentScope == scope OR EnvironmentScope == "*"
+func FilterByScope(vars []Variable, scope string) []Variable {
+	if scope == "" {
+		return vars
+	}
+	result := make([]Variable, 0, len(vars))
+	for _, v := range vars {
+		if v.EnvironmentScope == scope || (scope != "*" && v.EnvironmentScope == "*") {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
 // CreateRequest is the payload for creating or updating a variable.
 type CreateRequest struct {
 	Key              string `json:"key"`
