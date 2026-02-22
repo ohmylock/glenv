@@ -79,10 +79,10 @@ complexity: Low
 ---
 
 **Steps:**
-- [ ] Run full test suite: `go test -race ./...`
-- [ ] Run `go vet ./...`
-- [ ] Manual test: `glenv list -e production` — should show only production + wildcard vars
-- [ ] Manual test: `glenv sync -e production --dry-run` — should show UPDATE not CREATE for existing vars
+- [x] Run full test suite: `go test -race ./...`
+- [x] Run `go vet ./...`
+- [x] Manual test: `glenv list -e production` — should show only production + wildcard vars
+- [x] Manual test: `glenv sync -e production --dry-run` — should show UPDATE not CREATE for existing vars
 
 ## File Summary
 
