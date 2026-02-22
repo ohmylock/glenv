@@ -66,9 +66,9 @@ complexity: Low
 - Modify: `cmd/glenv/main.go`
 
 **Steps:**
-- [ ] Add `vars = gitlab.FilterByScope(vars, cmd.Environment)` after ListVariables in ListCommand
-- [ ] Add `vars = gitlab.FilterByScope(vars, cmd.Environment)` after ListVariables in ExportCommand
-- [ ] Run `go test ./cmd/glenv/...` — must pass
+- [x] Add `vars = gitlab.FilterByScope(vars, cmd.Environment)` after ListVariables in ListCommand
+- [x] Add `vars = gitlab.FilterByScope(vars, cmd.Environment)` after ListVariables in ExportCommand
+- [x] Run `go test ./cmd/glenv/...` — must pass
 
 ### Task 4: Verification
 

@@ -217,6 +217,9 @@ func (cmd *ListCommand) Execute(args []string) error {
 		return fmt.Errorf("list variables: %w", err)
 	}
 
+	// Apply client-side filtering: GitLab API ignores environment_scope parameter.
+	vars = gitlab.FilterByScope(vars, cmd.Environment)
+
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "KEY\tTYPE\tSCOPE\tMASKED\tPROTECTED")
 	for _, v := range vars {
@@ -253,6 +256,9 @@ func (cmd *ExportCommand) Execute(args []string) error {
 	if err != nil {
 		return fmt.Errorf("list variables: %w", err)
 	}
+
+	// Apply client-side filtering: GitLab API ignores environment_scope parameter.
+	vars = gitlab.FilterByScope(vars, cmd.Environment)
 
 	out := io.Writer(os.Stdout)
 	var outFile *os.File
