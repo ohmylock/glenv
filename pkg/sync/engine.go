@@ -101,12 +101,17 @@ func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, pro
 // Diff computes the set of changes needed to bring remote in sync with local.
 // envScope is passed as the environment_scope when creating/updating variables.
 func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult {
+	// Client-side scope filtering: GitLab API does not reliably honour the
+	// filter[environment_scope] query parameter on the LIST endpoint
+	// (see https://gitlab.com/gitlab-org/gitlab/-/issues/343169), so we
+	// filter the response ourselves before building the index.
+	remote = gitlab.FilterByScope(remote, envScope)
+
 	// Index remote by key for O(1) lookup.
-	// The caller already filters ListVariables by environment_scope, so all
-	// returned variables belong to the target scope (including wildcard "*"
-	// matches). When both a wildcard and an exact-scope variable exist for the
-	// same key, prefer the exact-scope entry so that scopeMatch and value
-	// comparison operate on the precise variable rather than the wildcard one.
+	// After filtering, remote contains only variables matching the target scope
+	// (exact match) or the wildcard "*". When both exist for the same key,
+	// prefer the exact-scope entry so that scopeMatch and value comparison
+	// operate on the precise variable rather than the wildcard one.
 	remoteMap := make(map[string]gitlab.Variable, len(remote))
 	for _, v := range remote {
 		existing, ok := remoteMap[v.Key]

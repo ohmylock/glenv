@@ -470,6 +470,50 @@ func TestDiff_WildcardScope_Update(t *testing.T) {
 	assert.Equal(t, "*", diff.Changes[0].envScope)
 }
 
+func TestDiff_FiltersRemoteByScope(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Simulate GitLab API returning all scopes (server ignores filter[environment_scope]).
+	// Without client-side filtering the "staging" entry (arriving first) would
+	// overwrite remoteMap, causing a false CREATE. FilterByScope removes it before
+	// indexing so the production entry is found and the result is UNCHANGED.
+	local := []envfile.Variable{{Key: "FOO", Value: "prod-value"}}
+	remote := []gitlab.Variable{
+		{Key: "FOO", Value: "staging-value", VariableType: "env_var", EnvironmentScope: "staging"},
+		{Key: "FOO", Value: "prod-value", VariableType: "env_var", EnvironmentScope: "production"},
+	}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUnchanged, diff.Changes[0].Kind,
+		"client-side filter must prevent staging entry from shadowing production entry")
+}
+
+func TestDiff_IgnoresOtherScopes(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{DeleteMissing: true})
+
+	// API returns vars from all scopes; only production + wildcard should be visible.
+	// STAGING_SECRET must not appear in the diff at all.
+	local := []envfile.Variable{{Key: "APP_KEY", Value: "prod-key"}}
+	remote := []gitlab.Variable{
+		{Key: "APP_KEY", Value: "prod-key", VariableType: "env_var", EnvironmentScope: "production"},
+		{Key: "STAGING_SECRET", Value: "x", EnvironmentScope: "staging"},
+		{Key: "COMMON", Value: "global", VariableType: "env_var", EnvironmentScope: "*"},
+	}
+
+	diff := engine.Diff(context.Background(), local, remote, "production")
+
+	kindMap := make(map[string]ChangeKind)
+	for _, ch := range diff.Changes {
+		kindMap[ch.Key] = ch.Kind
+	}
+
+	assert.Equal(t, ChangeUnchanged, kindMap["APP_KEY"], "production-scoped match should be UNCHANGED")
+	assert.Equal(t, ChangeDelete, kindMap["COMMON"], "wildcard var not in local should be deleted when DeleteMissing=true")
+	assert.NotContains(t, kindMap, "STAGING_SECRET", "staging-only var must not appear in production diff")
+}
+
 func TestApply_WildcardScope_UpdatePassesCorrectScope(t *testing.T) {
 	// Verify that when a wildcard-scoped remote variable is updated,
 	// UpdateVariable is called with EnvironmentScope="*" (not the target scope).

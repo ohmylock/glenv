@@ -48,11 +48,11 @@ complexity: Low
 - Modify: `pkg/sync/engine_test.go`
 
 **Steps:**
-- [ ] Import `gitlab` package if not already imported
-- [ ] Call `gitlab.FilterByScope(remote, envScope)` at start of `Diff()`
-- [ ] Update comment explaining client-side filtering
-- [ ] Add regression tests: FiltersRemoteByScope, IgnoresOtherScopes
-- [ ] Run `go test ./pkg/sync/...` — must pass
+- [x] Import `gitlab` package if not already imported
+- [x] Call `gitlab.FilterByScope(remote, envScope)` at start of `Diff()`
+- [x] Update comment explaining client-side filtering
+- [x] Add regression tests: FiltersRemoteByScope, IgnoresOtherScopes
+- [x] Run `go test ./pkg/sync/...` — must pass
 
 ### Task 3: Apply Filter in List and Export Commands
 
