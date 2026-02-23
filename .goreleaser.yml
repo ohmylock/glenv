@@ -37,6 +37,21 @@ checksum:
 changelog:
   disable: true
 
+brews:
+  - name: glenv
+    repository:
+      owner: ohmylock
+      name: homebrew-tools
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/ohmylock/glenv"
+    description: "Sync .env files to GitLab CI/CD variables — bulk import, export, and manage environment variables via CLI"
+    license: "MIT"
+    install: |
+      bin.install "glenv"
+    test: |
+      system "#{bin}/glenv", "version"
+
 release:
   header: |
     ## What's New
