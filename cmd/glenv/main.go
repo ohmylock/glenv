@@ -1,3 +1,4 @@
+//nolint:errcheck // CLI output errors are intentionally ignored
 package main
 
 import (

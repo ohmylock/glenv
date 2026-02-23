@@ -107,13 +107,13 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 
 		if resp.StatusCode != http.StatusOK {
 			msg := readErrorBody(resp)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("gitlab: list variables: unexpected status %d%s", resp.StatusCode, msg)
 		}
 
 		var pageVars []Variable
 		decodeErr := json.NewDecoder(resp.Body).Decode(&pageVars)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if decodeErr != nil {
 			return nil, fmt.Errorf("gitlab: list variables: decode: %w", decodeErr)
 		}
@@ -151,7 +151,7 @@ func (c *Client) CreateVariable(ctx context.Context, projectID string, r CreateR
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: create variable: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("gitlab: create variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
@@ -191,7 +191,7 @@ func (c *Client) UpdateVariable(ctx context.Context, projectID string, r CreateR
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: update variable: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("gitlab: update variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))
@@ -226,7 +226,7 @@ func (c *Client) DeleteVariable(ctx context.Context, projectID, key, envScope st
 	if err != nil {
 		return fmt.Errorf("gitlab: delete variable: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("gitlab: delete variable: unexpected status %d%s", resp.StatusCode, readErrorBody(resp))

@@ -1,3 +1,4 @@
+//nolint:errcheck // test file
 package gitlab
 
 import (
@@ -322,7 +323,7 @@ func TestBackoff_Exponential(t *testing.T) {
 
 	assert.GreaterOrEqual(t, b0, 10*time.Millisecond, "attempt 0 should be at least base")
 	assert.GreaterOrEqual(t, b1, 20*time.Millisecond, "attempt 1 should be at least 2*base")
-	assert.GreaterOrEqual(t, b1, b0, "backoff should grow with attempt number")
+	// Note: b1 >= b0 is not guaranteed due to random jitter (0-500ms)
 
 	// Extra duration is added on top.
 	b0WithExtra := client.backoff(0, 1*time.Second)

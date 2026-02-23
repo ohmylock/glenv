@@ -1,3 +1,4 @@
+//nolint:errcheck // test file
 package gitlab
 
 import (

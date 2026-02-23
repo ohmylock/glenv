@@ -78,7 +78,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 		if err != nil {
 			return nil, fmt.Errorf("gitlab: read request body: %w", err)
 		}
-		req.Body.Close()
+		_ = req.Body.Close()
 	}
 
 	req.Header.Set("PRIVATE-TOKEN", c.cfg.Token)
@@ -112,14 +112,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 
 		// 401: do not retry — return a clear authentication error.
 		if resp.StatusCode == http.StatusUnauthorized {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("gitlab: authentication failed (HTTP 401): verify your PRIVATE-TOKEN")
 		}
 
 		// 429: respect Retry-After, then retry.
 		if resp.StatusCode == http.StatusTooManyRequests {
 			extra := c.parseRetryAfter(resp)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if attempt < c.cfg.RetryMax {
 				sleep := c.backoff(attempt, extra)
 				select {
@@ -134,7 +134,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 
 		// 5xx: transient server errors, retry with backoff.
 		if resp.StatusCode >= 500 {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("gitlab: server error %d", resp.StatusCode)
 			if attempt < c.cfg.RetryMax {
 				sleep := c.backoff(attempt, 0)
