@@ -508,8 +508,38 @@ MIT License — see [LICENSE](LICENSE) file.
   Made with ❤️ for the DevOps community
 </p>
 
-<!-- SEO Keywords: gitlab ci/cd variables, gitlab environment variables, sync .env to gitlab,
-dotenv gitlab sync, gitlab variables cli tool, gitlab secrets management, gitlab variable import export,
-bulk gitlab variables, gitlab api variables cli, cicd configuration management, devops secrets automation,
-gitlab self-hosted variables, manage gitlab env variables, gitlab variable migration,
-export gitlab variables to env file, import env file to gitlab, gitlab ci variables bulk update -->
+<!--
+SEO Keywords (primary):
+- gitlab ci cd variables sync tool
+- gitlab environment variables cli
+- sync env file to gitlab
+- dotenv gitlab synchronization
+- gitlab variables bulk import export
+- gitlab secrets management cli
+- gitlab api variables automation
+
+SEO Keywords (secondary):
+- cicd configuration management
+- devops secrets automation tool
+- gitlab self-hosted variables sync
+- manage gitlab env variables programmatically
+- gitlab variable migration tool
+- export gitlab variables to env file
+- import env file to gitlab ci cd
+- gitlab ci variables bulk update upload
+- gitlab project variables cli
+- dotenv to gitlab ci cd
+- gitlab variable manager golang
+- alternative to glab variable
+- gitlab environment scope variables
+- masked protected variables gitlab
+- concurrent gitlab api client
+
+Related searches:
+- how to bulk upload variables to gitlab
+- sync local env with gitlab ci cd
+- gitlab variables import from file
+- automate gitlab environment variables
+- gitlab dotenv integration
+- manage gitlab secrets from command line
+-->

@@ -1,14 +1,34 @@
-
-# ralphex progress logs
-progress*.txt
-
-# build artifacts
-.bin/
+# Build artifacts
 bin/
 dist/
 /glenv
+*.exe
 
-# project artifacts
+# Test/coverage
 coverage.out
-*.env
+cover.out
+*.test
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project config (contains secrets)
 .glenv.yml
+*.env
+!*.env.example
+
+# Development logs
+progress*.txt
+
+# Internal development docs (not for public repo)
+docs/plans/
+docs/reviews/
+docs/issues/
+TEST_REVIEW_REPORT.md
