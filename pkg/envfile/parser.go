@@ -199,6 +199,9 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 					sb.WriteString(nextLine)
 				}
 				if !terminated {
+					if err := scanner.Err(); err != nil {
+						return nil, fmt.Errorf("envfile: line %d: scan error for key %q: %w", startLine, key, err)
+					}
 					return nil, fmt.Errorf("envfile: line %d: unterminated double-quoted value for key %q", startLine, key)
 				}
 				raw := sb.String()

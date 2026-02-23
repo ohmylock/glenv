@@ -67,6 +67,9 @@ func NewClient(cfg ClientConfig) *Client {
 // 429 responses are retried after honoring the Retry-After header.
 // Network errors are retried up to RetryMax times with exponential backoff.
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+	// Clone to avoid mutating the caller's request (token must not leak via shared headers).
+	req = req.Clone(ctx)
+
 	// Buffer the request body for replay on retry.
 	var bodyBytes []byte
 	if req.Body != nil && req.Body != http.NoBody {

@@ -146,7 +146,9 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				protected:      cl.Protected,
 				envScope:       envScope,
 			})
-		case rv.Value != lv.Value || rv.VariableType != cl.VarType || rv.Masked != cl.Masked || rv.Protected != cl.Protected:
+		case rv.Value != lv.Value || rv.VariableType != cl.VarType || rv.Masked != cl.Masked || (cl.Protected && !rv.Protected):
+			// Treat existing Protected=true as a floor: only promote false→true via
+			// the classifier; never strip a protection flag set manually in GitLab.
 			changes = append(changes, Change{
 				Kind:           ChangeUpdate,
 				Key:            lv.Key,
@@ -155,7 +157,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				Classification: classLabel,
 				varType:        cl.VarType,
 				masked:         cl.Masked,
-				protected:      cl.Protected,
+				protected:      cl.Protected || rv.Protected,
 				raw:            rv.Raw,
 				envScope:       rv.EnvironmentScope,
 			})
@@ -176,10 +178,14 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 		toDelete := make(map[string]struct{})
 		for _, rv := range remote {
 			if _, inLocal := localKeys[rv.Key]; !inLocal {
-				if _, seen := toDelete[rv.Key]; seen {
+				// Dedup by key+scope: a key may appear in multiple scopes
+				// (e.g. "*" and "production") after FilterByScope; each
+				// scope needs its own DELETE call.
+				deduKey := rv.Key + ":" + rv.EnvironmentScope
+				if _, seen := toDelete[deduKey]; seen {
 					continue
 				}
-				toDelete[rv.Key] = struct{}{}
+				toDelete[deduKey] = struct{}{}
 				changes = append(changes, Change{
 					Kind:     ChangeDelete,
 					Key:      rv.Key,
