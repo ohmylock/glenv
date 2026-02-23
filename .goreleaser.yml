@@ -35,9 +35,13 @@ checksum:
   algorithm: sha256
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "^ci:"
+  disable: true
+
+release:
+  header: |
+    ## What's New
+
+    See [CHANGELOG.md](https://github.com/ohmylock/glenv/blob/main/CHANGELOG.md) for full details.
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/ohmylock/glenv/blob/main/CHANGELOG.md
