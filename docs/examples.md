@@ -275,7 +275,7 @@ DB_PASSWORD="super-secret-password-here"
 
 # External APIs
 OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-STRIPE_SECRET_KEY="sk_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+STRIPE_SECRET_KEY="sk_test_your_stripe_key_here"
 ```
 
 ### Multiline Values (SSH Keys, Certificates)
