@@ -79,20 +79,28 @@ glenv diff -f .env.production -e production
 
 ## Installation
 
-### From source
-
-```bash
-go install github.com/ohmylock/glenv/cmd/glenv@latest
-```
-
-### From releases
-
-Download the appropriate binary from [releases](https://github.com/ohmylock/glenv/releases).
-
-### Using Homebrew
+### Homebrew (macOS/Linux)
 
 ```bash
 brew install ohmylock/tools/glenv
+```
+
+### Download binary
+
+Download the appropriate binary for your platform from [releases](https://github.com/ohmylock/glenv/releases):
+
+| Platform | Architecture | File |
+|----------|--------------|------|
+| macOS | Apple Silicon | `glenv_*_darwin_arm64.tar.gz` |
+| macOS | Intel | `glenv_*_darwin_amd64.tar.gz` |
+| Linux | x86_64 | `glenv_*_linux_amd64.tar.gz` |
+| Linux | ARM64 | `glenv_*_linux_arm64.tar.gz` |
+| Windows | x86_64 | `glenv_*_windows_amd64.zip` |
+
+### Go install
+
+```bash
+go install github.com/ohmylock/glenv/cmd/glenv@latest
 ```
 
 ### Build from source
