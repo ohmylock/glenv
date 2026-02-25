@@ -1,3 +1,7 @@
+<p align="right">
+  <a href="README.ru.md">🇷🇺 Читать на русском</a>
+</p>
+
 <p align="center">
   <img src="https://img.shields.io/badge/go-1.25+-00ADD8?style=flat&logo=go" alt="Go version 1.25 or higher">
   <a href="https://github.com/ohmylock/glenv/actions/workflows/ci.yml"><img src="https://github.com/ohmylock/glenv/actions/workflows/ci.yml/badge.svg" alt="CI Build Status"></a>
