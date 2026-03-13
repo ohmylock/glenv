@@ -1,0 +1,44 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - unconvert
+    - gocyclo
+    - dupl
+    - misspell
+    - ineffassign
+    - gocritic
+    - nakedret
+    - prealloc
+    - staticcheck
+    - gosec
+  disable:
+    - revive
+  settings:
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    misspell:
+      locale: US
+    lll:
+      line-length: 140
+    gocritic:
+      enabled-tags:
+        - performance
+        - style
+        - experimental
+      disabled-checks:
+        - wrapperFunc
+        - hugeParam
+        - rangeValCopy
+        - singleCaseSwitch
+        - ifElseChain
+        - exitAfterDefer
+    gosec:
+      # G104: Errors unhandled - we intentionally ignore Printf/Close errors for CLI output
+      excludes:
+        - G104

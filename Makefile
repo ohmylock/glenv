@@ -25,7 +25,7 @@ cover:
 	@rm -f coverage.out
 
 lint:
-	golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 2>/dev/null || go vet ./...
+	golangci-lint run --max-issues-per-linter=0 --max-same-issues=0
 
 fmt:
 	gofmt -s -w $$(find . -type f -name "*.go" -not -path "./vendor/*")
