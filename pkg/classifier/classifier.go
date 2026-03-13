@@ -151,6 +151,13 @@ func (c *Classifier) matchesFile(key, value string) bool {
 		return true
 	}
 
+	// Key pattern matching only applies to multi-line values.
+	// Base64-encoded keys (e.g. SSH private keys stored as single-line base64)
+	// must remain env_var — they are not file-type variables.
+	if !strings.Contains(value, "\n") {
+		return false
+	}
+
 	for _, pat := range c.filePatterns {
 		if strings.Contains(upper, pat) {
 			return true

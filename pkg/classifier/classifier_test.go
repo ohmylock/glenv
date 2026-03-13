@@ -97,19 +97,19 @@ func TestClassify_Token_Multiline_NotMasked(t *testing.T) {
 
 func TestClassify_PrivateKey_FileType(t *testing.T) {
 	c := defaultClassifier()
-	got := c.Classify("PRIVATE_KEY", "somevalue", "staging")
+	got := c.Classify("PRIVATE_KEY", "line1\nline2\n", "staging")
 	assert.Equal(t, "file", got.VarType)
 }
 
 func TestClassify_CACert_FileType(t *testing.T) {
 	c := defaultClassifier()
-	got := c.Classify("CA_CERT", "somevalue", "staging")
+	got := c.Classify("CA_CERT", "line1\nline2\n", "staging")
 	assert.Equal(t, "file", got.VarType)
 }
 
 func TestClassify_TLSPem_FileType(t *testing.T) {
 	c := defaultClassifier()
-	got := c.Classify("TLS_PEM", "somevalue", "staging")
+	got := c.Classify("TLS_PEM", "line1\nline2\n", "staging")
 	assert.Equal(t, "file", got.VarType)
 }
 
@@ -155,7 +155,7 @@ func TestClassify_PEMValue_TokenKey_FileType(t *testing.T) {
 
 func TestClassify_FileType_Production_Protected(t *testing.T) {
 	c := defaultClassifier()
-	got := c.Classify("RSA_PRIVATE_KEY", "any value", "production")
+	got := c.Classify("RSA_PRIVATE_KEY", "line1\nline2\n", "production")
 	assert.Equal(t, "file", got.VarType)
 	assert.True(t, got.Protected, "file-type variables in production should be protected")
 	assert.False(t, got.Masked, "file-type variables are never masked")
@@ -170,9 +170,25 @@ func TestClassify_PEMValue_Production_Protected(t *testing.T) {
 
 func TestClassify_FileType_Staging_NotProtected(t *testing.T) {
 	c := defaultClassifier()
-	got := c.Classify("RSA_PRIVATE_KEY", "any value", "staging")
+	got := c.Classify("RSA_PRIVATE_KEY", "line1\nline2\n", "staging")
 	assert.Equal(t, "file", got.VarType)
 	assert.False(t, got.Protected, "file-type variables in non-production should not be protected")
+}
+
+func TestClassify_Base64PrivateKey_EnvVar(t *testing.T) {
+	// Base64-encoded SSH private key: single-line, no newlines → must be env_var, not file
+	c := defaultClassifier()
+	b64Key := "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K" // base64, no newlines
+	got := c.Classify("DEPLOY_PRIVATE_KEY", b64Key, "staging")
+	assert.Equal(t, "env_var", got.VarType, "base64 single-line key must not be classified as file")
+}
+
+func TestClassify_MultilinePrivateKey_FileType(t *testing.T) {
+	// PEM private key with real newlines → must be file type
+	c := defaultClassifier()
+	pem := "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----"
+	got := c.Classify("DEPLOY_PRIVATE_KEY", pem, "staging")
+	assert.Equal(t, "file", got.VarType, "multiline PEM key must be classified as file")
 }
 
 // --- Custom rules ---
@@ -198,7 +214,7 @@ func TestClassify_CustomFilePattern(t *testing.T) {
 	c := New(Rules{
 		FilePatterns: []string{"_BUNDLE"},
 	})
-	got := c.Classify("APP_BUNDLE", "somevalue", "staging")
+	got := c.Classify("APP_BUNDLE", "line1\nline2\n", "staging")
 	assert.Equal(t, "file", got.VarType)
 }
 
@@ -264,7 +280,7 @@ func TestClassify_TableDriven(t *testing.T) {
 		{
 			name:        "private key file type",
 			key:         "RSA_PRIVATE_KEY",
-			value:       "any value",
+			value:       "line1\nline2\n",
 			env:         "staging",
 			wantMasked:  false,
 			wantProtected: false,
