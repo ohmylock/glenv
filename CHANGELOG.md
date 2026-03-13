@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Classification bugs:**
+  - Base64-encoded SSH keys now correctly classified as `env_var` instead of `file`
+  - Key pattern matching (PRIVATE_KEY, _CERT, _PEM) now requires actual newlines in value
+  - `masked=true` flag preserved on update (floor logic, same as `protected`)
+  - Added `PRIVATE_KEY` to masked patterns for base64 SSH keys
+
+### Added
+
+- Exported `IsMaskable()` function for external use
+- GitHub issue and PR templates
+- Dependabot for automated dependency updates
+- Extended golangci-lint configuration (gosec, gocritic, etc.)
+
+### Changed
+
+- Pinned golangci-lint version in CI (v2.1.6)
+- Archives now include LICENSE and README.md
+
 ## [0.1.0] - 2026-02-23
 
 ### Added
