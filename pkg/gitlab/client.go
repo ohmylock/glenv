@@ -96,7 +96,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 			req.ContentLength = int64(len(bodyBytes))
 		}
 
-		resp, err := c.http.Do(req)
+		resp, err := c.http.Do(req) //nolint:gosec // G704: Not SSRF - URL comes from trusted config
 		if err != nil {
 			lastErr = err
 			if attempt < c.cfg.RetryMax {
@@ -168,7 +168,7 @@ func (c *Client) backoff(attempt int, extra time.Duration) time.Duration {
 		attempt = 30
 	}
 	base := c.cfg.RetryInitialBackoff
-	exp := time.Duration(1 << uint(attempt))
+	exp := time.Duration(1 << uint(attempt)) //nolint:gosec // G115: attempt is capped at 30, no overflow possible
 	// Guard against int64 overflow: if base alone exceeds maxBackoff, clamp early.
 	if base > maxBackoff {
 		base = maxBackoff
@@ -177,7 +177,7 @@ func (c *Client) backoff(attempt int, extra time.Duration) time.Duration {
 	if d > maxBackoff || d < 0 { // d < 0 catches any residual overflow
 		d = maxBackoff
 	}
-	jitter := time.Duration(rand.Int64N(int64(500 * time.Millisecond)))
+	jitter := time.Duration(rand.Int64N(int64(500 * time.Millisecond))) //nolint:gosec // G404: jitter for backoff, not security-sensitive
 	result := d + jitter
 	if result > maxBackoff {
 		result = maxBackoff

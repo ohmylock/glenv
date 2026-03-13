@@ -95,7 +95,7 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 		}
 
 		apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables?%s", c.cfg.BaseURL, url.PathEscape(projectID), q.Encode())
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 		if err != nil {
 			return nil, fmt.Errorf("gitlab: list variables: build request: %w", err)
 		}
@@ -217,7 +217,7 @@ func (c *Client) DeleteVariable(ctx context.Context, projectID, key, envScope st
 		apiURL += "?" + q.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, apiURL, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("gitlab: delete variable: build request: %w", err)
 	}

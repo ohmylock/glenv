@@ -81,7 +81,7 @@ func containsUnescapedInterpolation(s string) bool {
 
 // ParseFile opens the file at path and parses it as a .env file.
 func ParseFile(path string) (*ParseResult, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(path) //nolint:gosec // G304: file path comes from user CLI argument, expected behavior
 	if err != nil {
 		return nil, fmt.Errorf("envfile: open %q: %w", path, err)
 	}
@@ -151,7 +151,7 @@ func ParseReader(r io.Reader) (*ParseResult, error) {
 		var value string
 		dqProcessed := false
 		sqProcessed := false
-		if len(rawValue) > 0 && (rawValue[0] == '"' || rawValue[0] == '\'') {
+		if rawValue != "" && (rawValue[0] == '"' || rawValue[0] == '\'') {
 			quote := rawValue[0]
 			inner := rawValue[1:]
 

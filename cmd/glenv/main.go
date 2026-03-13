@@ -266,7 +266,7 @@ func (cmd *ExportCommand) Execute(args []string) error {
 	out := io.Writer(os.Stdout)
 	var outFile *os.File
 	if cmd.Output != "" {
-		f, err := os.OpenFile(cmd.Output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		f, err := os.OpenFile(cmd.Output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err != nil {
 			return fmt.Errorf("create output file: %w", err)
 		}

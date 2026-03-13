@@ -107,7 +107,7 @@ func TestDiff_DeleteMissing_Enabled(t *testing.T) {
 	diff := engine.Diff(context.Background(), local, remote, "*")
 
 	require.Len(t, diff.Changes, 2)
-	var kinds []ChangeKind
+	kinds := make([]ChangeKind, 0, len(diff.Changes))
 	for _, ch := range diff.Changes {
 		kinds = append(kinds, ch.Kind)
 	}
@@ -197,7 +197,7 @@ func TestApply_Concurrent(t *testing.T) {
 
 func TestApply_ContextCancel(t *testing.T) {
 	// Use a channel to block workers until we cancel.
-	// Each call to createFn blocks until ctx is cancelled, then returns error.
+	// Each call to createFn blocks until ctx is canceled, then returns error.
 	var started atomic.Int32
 
 	fake := &fakeClient{
@@ -232,7 +232,7 @@ func TestApply_ContextCancel(t *testing.T) {
 	report := <-done
 
 	// The 2 in-flight tasks return ctx error, the remaining 18 are skipped at
-	// the pre-check. All 20 tasks must be accounted for.
+	// the pre-check. All 20 tasks must be accounted for (canceled).
 	assert.GreaterOrEqual(t, report.Failed, 2, "both in-flight workers should report failure")
 	assert.Equal(t, 0, report.Created, "no tasks should complete successfully after cancellation")
 	assert.Equal(t, 20, report.Failed+report.Created, "all 20 tasks must be accounted for")

@@ -236,7 +236,7 @@ func TestResolveConfigPath_LocalFile(t *testing.T) {
 	// Create a temp dir with a .glenv.yml and change to it
 	dir := t.TempDir()
 	localPath := filepath.Join(dir, ".glenv.yml")
-	require.NoError(t, os.WriteFile(localPath, []byte("gitlab:\n  token: t\n"), 0600))
+	require.NoError(t, os.WriteFile(localPath, []byte("gitlab:\n  token: t\n"), 0o600))
 
 	// Override working directory lookup by using explicit path
 	// resolveConfigPath("") should find local .glenv.yml
@@ -250,7 +250,7 @@ func TestResolveConfigPath_LocalFile(t *testing.T) {
 func TestResolveConfigPath_ExplicitPath(t *testing.T) {
 	dir := t.TempDir()
 	explicitPath := filepath.Join(dir, "custom.yml")
-	require.NoError(t, os.WriteFile(explicitPath, []byte("gitlab:\n  token: t\n"), 0600))
+	require.NoError(t, os.WriteFile(explicitPath, []byte("gitlab:\n  token: t\n"), 0o600))
 
 	path, err := resolveConfigPath(explicitPath, dir)
 	require.NoError(t, err)

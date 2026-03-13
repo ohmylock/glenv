@@ -40,7 +40,7 @@ func TestDo_AuthHeader(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
@@ -69,7 +69,7 @@ func TestDo_RateLimiting(t *testing.T) {
 
 	// Send multiple requests and verify they all succeed (limiter doesn't block at high rate)
 	for i := 0; i < 5; i++ {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", http.NoBody)
 		require.NoError(t, err)
 		resp, err := client.Do(context.Background(), req)
 		require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestDo_Retry_NetworkError(t *testing.T) {
 				conn.Close()
 				return
 			}
-			// Fallback: return 500
+			// If hijacking fails, fall back to status 500
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -110,7 +110,7 @@ func TestDo_Retry_NetworkError(t *testing.T) {
 	}
 	client := NewClient(cfg)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
@@ -135,7 +135,7 @@ func TestDo_Retry_429_RetryAfter(t *testing.T) {
 		w.Write([]byte(`"ok"`))
 	})
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
@@ -160,7 +160,7 @@ func TestDo_Retry_429_NoHeader(t *testing.T) {
 		w.Write([]byte(`"ok"`))
 	})
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
@@ -197,7 +197,7 @@ func TestDo_MaxRetriesExceeded(t *testing.T) {
 	}
 	client := NewClient(cfg)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	_, err = client.Do(context.Background(), req)
@@ -215,7 +215,7 @@ func TestDo_401_NoRetry(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
@@ -232,7 +232,7 @@ func TestDo_Success(t *testing.T) {
 		w.Write([]byte(`{"key":"value"}`))
 	})
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, client.cfg.BaseURL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(context.Background(), req)
@@ -303,7 +303,7 @@ func TestDo_ContextCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, client.cfg.BaseURL+"/test", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, client.cfg.BaseURL+"/test", http.NoBody)
 	require.NoError(t, err)
 
 	_, err = client.Do(ctx, req)

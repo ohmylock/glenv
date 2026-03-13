@@ -144,7 +144,7 @@ func Load(configPath string) (*Config, error) {
 
 	// Parse and overlay YAML file.
 	if resolved != "" {
-		data, err := os.ReadFile(resolved)
+		data, err := os.ReadFile(resolved) //nolint:gosec // G304: file path comes from user config, expected behavior
 		if err != nil {
 			return nil, fmt.Errorf("config: read %q: %w", resolved, err)
 		}

@@ -49,7 +49,7 @@ type Result struct {
 	Error  error
 }
 
-// SyncReport summarises the outcome of an Apply run.
+// SyncReport summarizes the outcome of an Apply run.
 type SyncReport struct {
 	Created   int
 	Updated   int
@@ -62,7 +62,7 @@ type SyncReport struct {
 	Errors    []error
 }
 
-// Options controls Engine behaviour.
+// Options controls Engine behavior.
 type Options struct {
 	Workers       int
 	DryRun        bool
@@ -101,7 +101,7 @@ func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, pro
 // Diff computes the set of changes needed to bring remote in sync with local.
 // envScope is passed as the environment_scope when creating/updating variables.
 func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gitlab.Variable, envScope string) DiffResult {
-	// Client-side scope filtering: GitLab API does not reliably honour the
+	// Client-side scope filtering: GitLab API does not reliably honor the
 	// filter[environment_scope] query parameter on the LIST endpoint
 	// (see https://gitlab.com/gitlab-org/gitlab/-/issues/343169), so we
 	// filter the response ourselves before building the index.
