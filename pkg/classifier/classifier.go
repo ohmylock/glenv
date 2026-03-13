@@ -31,7 +31,7 @@ type Classifier struct {
 
 // Built-in patterns (case-insensitive substring matching against uppercase key).
 var (
-	builtinMaskedPatterns = []string{"_TOKEN", "SECRET", "PASSWORD", "API_KEY", "DSN"}
+	builtinMaskedPatterns = []string{"_TOKEN", "SECRET", "PASSWORD", "API_KEY", "DSN", "PRIVATE_KEY"}
 	builtinMaskedExclude  = []string{"MAX_TOKENS", "TIMEOUT", "PORT"}
 	builtinFilePatterns   = []string{"PRIVATE_KEY", "_CERT", "_PEM"}
 	builtinFileExclude    = []string{"_PATH", "_DIR", "_URL"}

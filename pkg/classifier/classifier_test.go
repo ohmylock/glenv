@@ -191,6 +191,15 @@ func TestClassify_MultilinePrivateKey_FileType(t *testing.T) {
 	assert.Equal(t, "file", got.VarType, "multiline PEM key must be classified as file")
 }
 
+func TestClassify_Base64PrivateKey_Masked(t *testing.T) {
+	// Base64-encoded SSH private key with PRIVATE_KEY name → env_var type and masked=true
+	c := defaultClassifier()
+	b64Key := "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNabGNuTnpMV0Z3Y0hnaGRtVmZjbU4zY3k1bGVHRnRjR3hsTG1SdmJRPT0K" // base64, no newlines, 88 chars (maskable)
+	got := c.Classify("DEPLOY_PRIVATE_KEY", b64Key, "staging")
+	assert.Equal(t, "env_var", got.VarType, "base64 single-line key must be env_var")
+	assert.True(t, got.Masked, "PRIVATE_KEY pattern should trigger masking for maskable base64 values")
+}
+
 // --- Custom rules ---
 
 func TestClassify_CustomMaskedPattern(t *testing.T) {
