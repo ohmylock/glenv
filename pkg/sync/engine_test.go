@@ -521,9 +521,10 @@ func TestDiff_PreserveMaskedOnUpdate(t *testing.T) {
 	// Remote has masked=true (set manually in GitLab). Classifier returns masked=false
 	// because the key name doesn't match any masked pattern, but the value is
 	// maskable (≥8 chars, no whitespace). Floor logic must preserve masked=true.
-	local := []envfile.Variable{{Key: "CUSTOM_TOKEN", Value: "newvalue9"}}
+	// Note: using MY_SETTING (not CUSTOM_TOKEN) to avoid matching _TOKEN pattern.
+	local := []envfile.Variable{{Key: "MY_SETTING", Value: "newvalue9"}}
 	remote := []gitlab.Variable{{
-		Key:              "CUSTOM_TOKEN",
+		Key:              "MY_SETTING",
 		Value:            "oldvalue9",
 		VariableType:     "env_var",
 		Masked:           true,
@@ -543,9 +544,10 @@ func TestDiff_PreserveMaskedOnUpdate_NotMaskable(t *testing.T) {
 
 	// Remote has masked=true but new local value is too short to be masked.
 	// Floor logic must NOT preserve masked when value is not maskable.
-	local := []envfile.Variable{{Key: "CUSTOM_TOKEN", Value: "short"}}
+	// Note: using MY_SETTING (not CUSTOM_TOKEN) to avoid matching _TOKEN pattern.
+	local := []envfile.Variable{{Key: "MY_SETTING", Value: "short"}}
 	remote := []gitlab.Variable{{
-		Key:              "CUSTOM_TOKEN",
+		Key:              "MY_SETTING",
 		Value:            "oldvalue9",
 		VariableType:     "env_var",
 		Masked:           true,
@@ -565,9 +567,10 @@ func TestDiff_NoUnnecessaryUpdate_MaskedFloorOnly(t *testing.T) {
 	// Remote has masked=true, classifier would say masked=false (no pattern match),
 	// but value is maskable. Floor logic preserves masked=true.
 	// Since value/type are identical, NO UPDATE should be triggered.
-	local := []envfile.Variable{{Key: "CUSTOM_TOKEN", Value: "samevalue"}}
+	// Note: using MY_SETTING (not CUSTOM_TOKEN) to avoid matching _TOKEN pattern.
+	local := []envfile.Variable{{Key: "MY_SETTING", Value: "samevalue"}}
 	remote := []gitlab.Variable{{
-		Key:              "CUSTOM_TOKEN",
+		Key:              "MY_SETTING",
 		Value:            "samevalue", // Same value as local
 		VariableType:     "env_var",
 		Masked:           true, // Manually set in GitLab
