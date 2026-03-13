@@ -116,6 +116,12 @@ func isMaskable(value string) bool {
 	return true
 }
 
+// IsMaskable checks if a value can be masked by GitLab.
+// It is exported for use in engine.go's diff logic.
+func IsMaskable(value string) bool {
+	return isMaskable(value)
+}
+
 // matchesMasked returns true if the key matches a masked pattern and is NOT in
 // the exclude list. Exclude is checked first (exclude-first logic).
 func (c *Classifier) matchesMasked(key string) bool {
