@@ -515,6 +515,49 @@ func TestDiff_IgnoresOtherScopes(t *testing.T) {
 	assert.NotContains(t, kindMap, "STAGING_SECRET", "staging-only var must not appear in production diff")
 }
 
+func TestDiff_PreserveMaskedOnUpdate(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Remote has masked=true (set manually in GitLab). Classifier returns masked=false
+	// because the key name doesn't match any masked pattern, but the value is
+	// maskable (≥8 chars, no whitespace). Floor logic must preserve masked=true.
+	local := []envfile.Variable{{Key: "CUSTOM_TOKEN", Value: "newvalue9"}}
+	remote := []gitlab.Variable{{
+		Key:              "CUSTOM_TOKEN",
+		Value:            "oldvalue9",
+		VariableType:     "env_var",
+		Masked:           true,
+		EnvironmentScope: "*",
+	}}
+
+	diff := engine.Diff(context.Background(), local, remote, "*")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind)
+	assert.True(t, diff.Changes[0].masked, "masked floor: remote masked=true must be preserved when value is maskable")
+}
+
+func TestDiff_PreserveMaskedOnUpdate_NotMaskable(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Remote has masked=true but new local value is too short to be masked.
+	// Floor logic must NOT preserve masked when value is not maskable.
+	local := []envfile.Variable{{Key: "CUSTOM_TOKEN", Value: "short"}}
+	remote := []gitlab.Variable{{
+		Key:              "CUSTOM_TOKEN",
+		Value:            "oldvalue9",
+		VariableType:     "env_var",
+		Masked:           true,
+		EnvironmentScope: "*",
+	}}
+
+	diff := engine.Diff(context.Background(), local, remote, "*")
+
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind)
+	assert.False(t, diff.Changes[0].masked, "masked must not be forced when new value is not maskable")
+}
+
 func TestApply_WildcardScope_UpdatePassesCorrectScope(t *testing.T) {
 	// Verify that when a wildcard-scoped remote variable is updated,
 	// UpdateVariable is called with EnvironmentScope="*" (not the target scope).

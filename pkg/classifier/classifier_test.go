@@ -186,7 +186,7 @@ func TestClassify_Base64PrivateKey_EnvVar(t *testing.T) {
 func TestClassify_MultilinePrivateKey_FileType(t *testing.T) {
 	// PEM private key with real newlines → must be file type
 	c := defaultClassifier()
-	pem := "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----"
+	pem := "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----" //nolint:gosec // test fixture, not a real key
 	got := c.Classify("DEPLOY_PRIVATE_KEY", pem, "staging")
 	assert.Equal(t, "file", got.VarType, "multiline PEM key must be classified as file")
 }

@@ -147,8 +147,10 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				envScope:       envScope,
 			})
 		case rv.Value != lv.Value || rv.VariableType != cl.VarType || rv.Masked != cl.Masked || (cl.Protected && !rv.Protected):
-			// Treat existing Protected=true as a floor: only promote false→true via
-			// the classifier; never strip a protection flag set manually in GitLab.
+			// Treat existing Protected=true and Masked=true as floors: only promote
+			// false→true via the classifier; never strip flags set manually in GitLab.
+			// For masked, only preserve if the value still satisfies GitLab's maskability
+			// requirements (IsMaskable), so we don't send an invalid API request.
 			changes = append(changes, Change{
 				Kind:           ChangeUpdate,
 				Key:            lv.Key,
@@ -156,7 +158,7 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				NewValue:       lv.Value,
 				Classification: classLabel,
 				varType:        cl.VarType,
-				masked:         cl.Masked,
+				masked:         cl.Masked || (rv.Masked && classifier.IsMaskable(lv.Value)),
 				protected:      cl.Protected || rv.Protected,
 				raw:            rv.Raw,
 				envScope:       rv.EnvironmentScope,
