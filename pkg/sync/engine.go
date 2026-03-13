@@ -151,15 +151,17 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 			// false→true via the classifier; never strip flags set manually in GitLab.
 			// For masked, only preserve if the value still satisfies GitLab's maskability
 			// requirements (IsMaskable), so we don't send an invalid API request.
+			finalMasked := cl.Masked || (rv.Masked && classifier.IsMaskable(lv.Value))
+			finalProtected := cl.Protected || rv.Protected
 			changes = append(changes, Change{
 				Kind:           ChangeUpdate,
 				Key:            lv.Key,
 				OldValue:       rv.Value,
 				NewValue:       lv.Value,
-				Classification: classLabel,
+				Classification: buildClassLabelFromValues(cl.VarType, finalMasked, finalProtected),
 				varType:        cl.VarType,
-				masked:         cl.Masked || (rv.Masked && classifier.IsMaskable(lv.Value)),
-				protected:      cl.Protected || rv.Protected,
+				masked:         finalMasked,
+				protected:      finalProtected,
 				raw:            rv.Raw,
 				envScope:       rv.EnvironmentScope,
 			})
@@ -368,11 +370,17 @@ func (e *Engine) applyOne(ctx context.Context, task Change) Result {
 
 // buildClassLabel returns a human-readable classification string from a Classification.
 func buildClassLabel(cl classifier.Classification) string {
-	label := cl.VarType
-	if cl.Masked {
+	return buildClassLabelFromValues(cl.VarType, cl.Masked, cl.Protected)
+}
+
+// buildClassLabelFromValues constructs a classification label from explicit values.
+// Used when floor logic modifies the final masked/protected flags.
+func buildClassLabelFromValues(varType string, masked, protected bool) string {
+	label := varType
+	if masked {
 		label += ",masked"
 	}
-	if cl.Protected {
+	if protected {
 		label += ",protected"
 	}
 	return label

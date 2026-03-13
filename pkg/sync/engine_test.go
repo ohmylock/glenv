@@ -535,6 +535,7 @@ func TestDiff_PreserveMaskedOnUpdate(t *testing.T) {
 	require.Len(t, diff.Changes, 1)
 	assert.Equal(t, ChangeUpdate, diff.Changes[0].Kind)
 	assert.True(t, diff.Changes[0].masked, "masked floor: remote masked=true must be preserved when value is maskable")
+	assert.Contains(t, diff.Changes[0].Classification, "masked", "Classification label must reflect preserved masked flag")
 }
 
 func TestDiff_PreserveMaskedOnUpdate_NotMaskable(t *testing.T) {

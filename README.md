@@ -262,9 +262,9 @@ glenv auto-detects variable properties:
 
 | Property | Condition |
 |----------|-----------|
-| **masked** | Key matches secret pattern (`_TOKEN`, `SECRET`, `PASSWORD`, etc.) AND value is >= 8 characters AND value is single-line AND value contains only `[a-zA-Z0-9_:@-.+~=/]` characters |
+| **masked** | Key matches secret pattern (`_TOKEN`, `SECRET`, `PASSWORD`, `PRIVATE_KEY`, etc.) AND value is >= 8 characters AND value is single-line AND value contains only `[a-zA-Z0-9_:@-.+~=/]` characters |
 | **protected** | Environment is `production` AND key matches secret pattern |
-| **file type** | Key matches file pattern (`PRIVATE_KEY`, `_CERT`, `_PEM`) OR value contains PEM headers (`-----BEGIN`) |
+| **file type** | (Key matches file pattern (`PRIVATE_KEY`, `_CERT`, `_PEM`) AND value contains newlines) OR value contains PEM headers (`-----BEGIN`) |
 
 Variables with placeholder values (`your_`, `CHANGE_ME`, `REPLACE_WITH_`) are skipped.
 Variables with interpolation (`${VAR}`) are skipped.
