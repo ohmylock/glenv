@@ -559,6 +559,31 @@ func TestDiff_PreserveMaskedOnUpdate_NotMaskable(t *testing.T) {
 	assert.False(t, diff.Changes[0].masked, "masked must not be forced when new value is not maskable")
 }
 
+func TestDiff_NoUnnecessaryUpdate_MaskedFloorOnly(t *testing.T) {
+	engine := newTestEngine(&fakeClient{}, Options{})
+
+	// Remote has masked=true, classifier would say masked=false (no pattern match),
+	// but value is maskable. Floor logic preserves masked=true.
+	// Since value/type are identical, NO UPDATE should be triggered.
+	local := []envfile.Variable{{Key: "CUSTOM_TOKEN", Value: "samevalue"}}
+	remote := []gitlab.Variable{{
+		Key:              "CUSTOM_TOKEN",
+		Value:            "samevalue", // Same value as local
+		VariableType:     "env_var",
+		Masked:           true, // Manually set in GitLab
+		Protected:        false,
+		EnvironmentScope: "*",
+	}}
+
+	diff := engine.Diff(context.Background(), local, remote, "*")
+
+	// Should be UNCHANGED, not UPDATE - floor logic preserves masked=true,
+	// so there's no actual change to make.
+	require.Len(t, diff.Changes, 1)
+	assert.Equal(t, ChangeUnchanged, diff.Changes[0].Kind,
+		"no UPDATE when only difference is masked flag that floor logic would preserve")
+}
+
 func TestApply_WildcardScope_UpdatePassesCorrectScope(t *testing.T) {
 	// Verify that when a wildcard-scoped remote variable is updated,
 	// UpdateVariable is called with EnvironmentScope="*" (not the target scope).

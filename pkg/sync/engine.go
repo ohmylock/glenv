@@ -134,6 +134,13 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 		// A match requires: remote exists AND (remote scope == target scope OR remote scope is "*").
 		scopeMatch := exists && (rv.EnvironmentScope == envScope || rv.EnvironmentScope == "*")
 
+		// Pre-compute final flag values to account for floor logic.
+		// This prevents triggering unnecessary updates when the final value
+		// after floor logic would match the remote value.
+		// For CREATE (!scopeMatch), rv is zero-value so these equal cl.Masked/cl.Protected.
+		finalMasked := cl.Masked || (rv.Masked && classifier.IsMaskable(lv.Value))
+		finalProtected := cl.Protected || rv.Protected
+
 		switch {
 		case !scopeMatch:
 			changes = append(changes, Change{
@@ -146,13 +153,11 @@ func (e *Engine) Diff(ctx context.Context, local []envfile.Variable, remote []gi
 				protected:      cl.Protected,
 				envScope:       envScope,
 			})
-		case rv.Value != lv.Value || rv.VariableType != cl.VarType || rv.Masked != cl.Masked || (cl.Protected && !rv.Protected):
-			// Treat existing Protected=true and Masked=true as floors: only promote
-			// false→true via the classifier; never strip flags set manually in GitLab.
+		case rv.Value != lv.Value || rv.VariableType != cl.VarType || rv.Masked != finalMasked || rv.Protected != finalProtected:
+			// Floor logic: preserve existing Protected=true and Masked=true flags.
+			// Only promote false→true; never strip flags set manually in GitLab.
 			// For masked, only preserve if the value still satisfies GitLab's maskability
 			// requirements (IsMaskable), so we don't send an invalid API request.
-			finalMasked := cl.Masked || (rv.Masked && classifier.IsMaskable(lv.Value))
-			finalProtected := cl.Protected || rv.Protected
 			changes = append(changes, Change{
 				Kind:           ChangeUpdate,
 				Key:            lv.Key,
