@@ -8,7 +8,7 @@ REV=$(if $(filter --,$(GIT_REV)),dev,$(GIT_REV))
 
 LDFLAGS := -ldflags "-X main.version=$(REV) -s -w"
 
-.PHONY: all build test cover lint fmt race install uninstall release release-check clean version help
+.PHONY: all build test cover lint fmt race install uninstall clean version tag tag-delete release release-check help
 
 all: test build
 
@@ -49,11 +49,33 @@ uninstall:
 	@rm -f /usr/local/bin/glenv
 	@echo "✓ glenv removed from /usr/local/bin/"
 
+# Release targets
+tag:
+ifndef VERSION
+	$(error VERSION is required. Usage: make tag VERSION=v0.1.0)
+endif
+	@if git rev-parse $(VERSION) >/dev/null 2>&1; then \
+		echo "Error: tag $(VERSION) already exists"; exit 1; \
+	fi
+	@echo "Creating tag $(VERSION)..."
+	git tag -a $(VERSION) -m "Release $(VERSION)"
+	@echo "Pushing tag $(VERSION)..."
+	git push origin $(VERSION)
+
+tag-delete:
+ifndef VERSION
+	$(error VERSION is required. Usage: make tag-delete VERSION=v0.1.0)
+endif
+	@echo "Deleting tag $(VERSION)..."
+	-git tag -d $(VERSION)
+	-git push origin :refs/tags/$(VERSION)
+	@echo "Tag $(VERSION) deleted locally and from remote"
+
 release:
-	goreleaser release --clean
+	@./scripts/release.sh
 
 release-check:
-	goreleaser release --snapshot --clean --skip=publish
+	@./scripts/release.sh --dry-run
 
 clean:
 	@rm -rf bin/ dist/ coverage.out
@@ -78,8 +100,10 @@ help:
 	@echo "  make version     Show version info (branch, hash, timestamp)"
 	@echo ""
 	@echo "Release targets:"
-	@echo "  make release       Run goreleaser"
-	@echo "  make release-check Run goreleaser snapshot (no publish)"
+	@echo "  make tag VERSION=v0.1.0        Create and push git tag"
+	@echo "  make tag-delete VERSION=v0.1.0 Delete tag locally and from remote"
+	@echo "  make release                   Build release with goreleaser"
+	@echo "  make release-check             Dry-run release (snapshot)"
 	@echo ""
 	@echo "Quick start:"
 	@echo "  make             Run: make test && make build"

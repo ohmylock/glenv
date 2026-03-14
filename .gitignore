@@ -26,6 +26,7 @@ Thumbs.db
 .glenv.yml
 *.env
 !*.env.example
+.release.env
 
 # Development logs
 progress*.txt
