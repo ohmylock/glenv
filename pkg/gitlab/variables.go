@@ -72,8 +72,8 @@ type ListOptions struct {
 	PerPage          int
 }
 
-// ListVariables returns all variables for the given project, following pagination.
-func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListOptions) ([]Variable, error) {
+// ListVariables returns all variables for the given target (project or group), following pagination.
+func (c *Client) ListVariables(ctx context.Context, targetType, targetID string, opts ListOptions) ([]Variable, error) {
 	perPage := opts.PerPage
 	if perPage <= 0 {
 		perPage = 100
@@ -94,7 +94,7 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 			q.Set("filter[environment_scope]", opts.EnvironmentScope)
 		}
 
-		apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables?%s", c.cfg.BaseURL, url.PathEscape(projectID), q.Encode())
+		apiURL := fmt.Sprintf("%s/api/v4/%s/%s/variables?%s", c.cfg.BaseURL, targetType, url.PathEscape(targetID), q.Encode())
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 		if err != nil {
 			return nil, fmt.Errorf("gitlab: list variables: build request: %w", err)
@@ -133,14 +133,14 @@ func (c *Client) ListVariables(ctx context.Context, projectID string, opts ListO
 	return nil, fmt.Errorf("gitlab: list variables: exceeded %d pages; possible pagination loop", maxPages)
 }
 
-// CreateVariable creates a new CI/CD variable for the given project.
-func (c *Client) CreateVariable(ctx context.Context, projectID string, r CreateRequest) (*Variable, error) {
+// CreateVariable creates a new CI/CD variable for the given target (project or group).
+func (c *Client) CreateVariable(ctx context.Context, targetType, targetID string, r CreateRequest) (*Variable, error) {
 	body, err := json.Marshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: create variable: encode: %w", err)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables", c.cfg.BaseURL, url.PathEscape(projectID))
+	apiURL := fmt.Sprintf("%s/api/v4/%s/%s/variables", c.cfg.BaseURL, targetType, url.PathEscape(targetID))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: create variable: build request: %w", err)
@@ -165,7 +165,7 @@ func (c *Client) CreateVariable(ctx context.Context, projectID string, r CreateR
 }
 
 // UpdateVariable updates an existing CI/CD variable identified by r.Key and r.EnvironmentScope.
-func (c *Client) UpdateVariable(ctx context.Context, projectID string, r CreateRequest) (*Variable, error) {
+func (c *Client) UpdateVariable(ctx context.Context, targetType, targetID string, r CreateRequest) (*Variable, error) {
 	body, err := json.Marshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: update variable: encode: %w", err)
@@ -176,7 +176,7 @@ func (c *Client) UpdateVariable(ctx context.Context, projectID string, r CreateR
 		q.Set("filter[environment_scope]", r.EnvironmentScope)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, url.PathEscape(projectID), url.PathEscape(r.Key))
+	apiURL := fmt.Sprintf("%s/api/v4/%s/%s/variables/%s", c.cfg.BaseURL, targetType, url.PathEscape(targetID), url.PathEscape(r.Key))
 	if len(q) > 0 {
 		apiURL += "?" + q.Encode()
 	}
@@ -204,15 +204,15 @@ func (c *Client) UpdateVariable(ctx context.Context, projectID string, r CreateR
 	return &v, nil
 }
 
-// DeleteVariable removes a CI/CD variable from the given project.
+// DeleteVariable removes a CI/CD variable from the given target (project or group).
 // envScope is optional; pass "" to omit the filter.
-func (c *Client) DeleteVariable(ctx context.Context, projectID, key, envScope string) error {
+func (c *Client) DeleteVariable(ctx context.Context, targetType, targetID, key, envScope string) error {
 	q := url.Values{}
 	if envScope != "" {
 		q.Set("filter[environment_scope]", envScope)
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/variables/%s", c.cfg.BaseURL, url.PathEscape(projectID), url.PathEscape(key))
+	apiURL := fmt.Sprintf("%s/api/v4/%s/%s/variables/%s", c.cfg.BaseURL, targetType, url.PathEscape(targetID), url.PathEscape(key))
 	if len(q) > 0 {
 		apiURL += "?" + q.Encode()
 	}

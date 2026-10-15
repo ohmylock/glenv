@@ -59,6 +59,7 @@ Instead of clicking through the GitLab web UI or writing fragile bash scripts, g
 - **Diff before sync** — preview changes before applying (create/update/delete)
 - **Dry-run mode** — see what would happen without making any API calls
 - **Multi-environment** — sync production, staging, or any custom environment from config
+- **Project and group variables** — sync variables at both project level and group level
 - **Export** — download current GitLab variables to `.env` file format
 - **.env parser** — supports multiline values, quoted strings, comments, placeholder detection
 - **Zero config** — works with just a token and project ID, config file is optional
@@ -136,6 +137,33 @@ glenv sync --all
 glenv sync -f .env -e production --workers 10 --rate-limit 50
 ```
 
+### Group-Level Variables
+
+Sync variables at the GitLab group level instead of a project. Group variables are shared across all projects within the group:
+
+```bash
+# Sync to a GitLab group using group ID
+glenv sync --group 12345 -f .env -e production
+
+# Using environment variable instead of flag
+export GITLAB_GROUP_ID=12345
+glenv sync -f .env -e production
+
+# List all variables in a group
+glenv list --group 12345
+
+# Preview changes before syncing to a group
+glenv diff --group 12345 -f .env
+
+# Export variables from a group
+glenv export --group 12345 -o group-vars.env
+
+# Delete a variable from a group
+glenv delete --group 12345 --key SECRET_API_KEY
+```
+
+> **Note:** `--project` and `--group` are mutually exclusive. Use one or the other, not both.
+
 ### Diff (Preview Changes)
 
 Compare local `.env` file with current GitLab variables:
@@ -196,7 +224,8 @@ glenv works with zero config (just env vars), but a config file unlocks multi-en
 gitlab:
   url: https://gitlab.com                     # self-hosted: https://gitlab.company.com
   token: ${GITLAB_TOKEN}                      # env var expansion supported
-  project_id: "12345678"
+  project_id: "12345678"                      # Project ID (mutually exclusive with group_id)
+  # group_id: "9876"                          # Group ID (for group-level variables, use instead of project_id)
 
 # Rate limiting (safe defaults for gitlab.com)
 rate_limit:
@@ -239,7 +268,8 @@ classify:
 | Variable | Description |
 |----------|-------------|
 | `GITLAB_TOKEN` | GitLab Personal Access Token (scope: `api`) |
-| `GITLAB_PROJECT_ID` | Project ID or URL-encoded path |
+| `GITLAB_PROJECT_ID` | Project ID or URL-encoded path (mutually exclusive with `GITLAB_GROUP_ID`) |
+| `GITLAB_GROUP_ID` | Group ID (mutually exclusive with `GITLAB_PROJECT_ID`) |
 | `GITLAB_URL` | GitLab instance URL (default: `https://gitlab.com`) |
 | `NO_COLOR` | Disable colored output when set to any non-empty value (standard convention) |
 
@@ -312,7 +342,8 @@ INTERPOLATED=${OTHER_VAR}/path      # interpolation detected
 |------|-------|---------|-------------|---------|
 | `--config` | `-c` | | Config file path | `.glenv.yml` |
 | `--token` | | `GITLAB_TOKEN` | GitLab access token | |
-| `--project` | | `GITLAB_PROJECT_ID` | Project ID | |
+| `--project` | | `GITLAB_PROJECT_ID` | Project ID (mutually exclusive with `--group`) | |
+| `--group` | | `GITLAB_GROUP_ID` | Group ID (mutually exclusive with `--project`) | |
 | `--url` | | `GITLAB_URL` | GitLab URL | `https://gitlab.com` |
 | `--dry-run` | `-n` | | Preview mode | `false` |
 | `--no-color` | | `NO_COLOR` | Disable colors | `false` |

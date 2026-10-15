@@ -15,7 +15,8 @@ The first file found is used. Config file is optional — glenv works with just 
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `GITLAB_TOKEN` | Personal Access Token with `api` scope | Yes (if not in config) |
-| `GITLAB_PROJECT_ID` | Project ID or URL-encoded path (e.g., `group%2Fproject`) | Yes (if not in config) |
+| `GITLAB_PROJECT_ID` | Project ID or URL-encoded path (e.g., `group%2Fproject`). Mutually exclusive with `GITLAB_GROUP_ID`. | Yes (if not in config and `GITLAB_GROUP_ID` not set) |
+| `GITLAB_GROUP_ID` | Group ID (number). Mutually exclusive with `GITLAB_PROJECT_ID`. | Yes (if not in config and `GITLAB_PROJECT_ID` not set) |
 | `GITLAB_URL` | GitLab instance URL | No (default: `https://gitlab.com`) |
 | `NO_COLOR` | Disable colored output (any value) | No |
 
@@ -41,7 +42,13 @@ gitlab:
   # Project ID (number) or URL-encoded path
   # Find at: Project → Settings → General → Project ID
   # Example path: "my-group%2Fmy-project"
+  # Mutually exclusive with group_id
   project_id: "12345678"
+
+  # Group ID (number) — for group-level variables
+  # Find at: Group → Settings → General → Group ID
+  # Mutually exclusive with project_id
+  # group_id: "9876"
 
 # Rate limiting configuration
 # Defaults are conservative and safe for gitlab.com SaaS

@@ -130,7 +130,8 @@ glenv version
 |------|-------|-------------|---------|
 | `--config` | `-c` | Config file path | `.glenv.yml` |
 | `--token` | | GitLab token (overrides config) | `$GITLAB_TOKEN` |
-| `--project` | | Project ID (overrides config) | `$GITLAB_PROJECT_ID` |
+| `--project` | | Project ID (mutually exclusive with `--group`) | `$GITLAB_PROJECT_ID` |
+| `--group` | | Group ID (mutually exclusive with `--project`) | `$GITLAB_GROUP_ID` |
 | `--url` | | GitLab URL (overrides config) | `https://gitlab.com` |
 | `--dry-run` | `-n` | Show what would happen, don't apply | `false` |
 | `--debug` | `-d` | Enable debug logging | `false` |
@@ -149,6 +150,38 @@ glenv version
 | `--no-auto-classify` | | Disable auto-detection of masked/protected/file |
 | `--force` | | Skip confirmation for destructive operations |
 
+## Project vs Group Targets
+
+glenv supports syncing variables to both project and group scopes:
+
+### Project Level (Default)
+- Scope: Single project
+- API endpoint: `GET/PUT /api/v4/projects/:id/variables`
+- Use case: Project-specific variables (database credentials, API keys for this project)
+- Access: Anyone with Developer+ role in the project
+
+### Group Level
+- Scope: Entire group (shared across all projects)
+- API endpoint: `GET/PUT /api/v4/groups/:id/variables`
+- Use case: Group-shared variables (common secrets, shared configuration)
+- Access: Anyone with Developer+ role in the group
+- Flag: `--group`
+- Config: `group_id` in `.glenv.yml`
+- Env var: `GITLAB_GROUP_ID`
+
+### Mutual Exclusion
+- Exactly **one** of `project_id` or `group_id` must be set
+- CLI flags: `--project` and `--group` are mutually exclusive
+- Config file: `project_id` and `group_id` are mutually exclusive
+- Validation error if both or neither are specified
+
+### Implementation Details
+- Config struct has `ProjectID` and `GroupID` fields
+- Method `TargetType()` returns `"projects"` or `"groups"`
+- Method `TargetID()` returns the configured ID
+- API paths dynamically constructed: `fmt.Sprintf("%s/api/v4/%s/%s/variables", baseURL, targetType, targetID)`
+- All commands (sync, diff, list, export, delete) work with both targets
+
 ## Config File
 
 File: `.glenv.yml` (project root) or `~/.glenv.yml` (global).
@@ -159,7 +192,8 @@ Project config takes priority over global.
 gitlab:
   url: https://gitlab.com                    # or self-hosted URL
   token: ${GITLAB_TOKEN}                     # supports env var expansion
-  project_id: "12345678"                     # or URL-encoded path: "group%2Fproject"
+  project_id: "12345678"                     # Project ID (mutually exclusive with group_id)
+  # group_id: "9876"                         # Group ID (for group-level variables, use instead of project_id)
 
 # Rate limiting (safe defaults for gitlab.com)
 rate_limit:

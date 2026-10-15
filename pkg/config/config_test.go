@@ -21,6 +21,7 @@ func TestLoad_Defaults(t *testing.T) {
 	assert.Equal(t, "https://gitlab.com", cfg.GitLab.URL)
 	assert.Equal(t, "", cfg.GitLab.Token)
 	assert.Equal(t, "", cfg.GitLab.ProjectID)
+	assert.Equal(t, "", cfg.GitLab.GroupID)
 	assert.Equal(t, float64(10), cfg.RateLimit.RequestsPerSecond)
 	assert.Equal(t, 5, cfg.RateLimit.MaxConcurrent)
 	assert.Equal(t, 3, cfg.RateLimit.RetryMax)
@@ -215,21 +216,76 @@ func TestValidate_MissingToken(t *testing.T) {
 	assert.Contains(t, err.Error(), "token")
 }
 
-// TestValidate_MissingProject checks that Validate returns error if project_id is empty.
-func TestValidate_MissingProject(t *testing.T) {
+// TestValidate_MissingBoth checks that Validate returns error if both project_id and group_id are empty.
+func TestValidate_MissingBoth(t *testing.T) {
 	cfg := &Config{}
 	cfg.GitLab.Token = "sometoken"
 	err := cfg.Validate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "project")
+	assert.Contains(t, err.Error(), "one of")
 }
 
-func TestValidate_Valid(t *testing.T) {
+// TestValidate_BothSet checks that Validate returns error if both project_id and group_id are set.
+func TestValidate_BothSet(t *testing.T) {
+	cfg := &Config{}
+	cfg.GitLab.Token = "sometoken"
+	cfg.GitLab.ProjectID = "12345"
+	cfg.GitLab.GroupID = "67890"
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "only one")
+}
+
+func TestValidate_Valid_Project(t *testing.T) {
 	cfg := &Config{}
 	cfg.GitLab.Token = "tok"
 	cfg.GitLab.ProjectID = "123"
 	err := cfg.Validate()
 	assert.NoError(t, err)
+}
+
+func TestValidate_Valid_Group(t *testing.T) {
+	cfg := &Config{}
+	cfg.GitLab.Token = "tok"
+	cfg.GitLab.GroupID = "456"
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestTargetType_Project(t *testing.T) {
+	cfg := &Config{}
+	cfg.GitLab.ProjectID = "123"
+	assert.Equal(t, "projects", cfg.TargetType())
+}
+
+func TestTargetType_Group(t *testing.T) {
+	cfg := &Config{}
+	cfg.GitLab.GroupID = "456"
+	assert.Equal(t, "groups", cfg.TargetType())
+}
+
+func TestTargetID_Project(t *testing.T) {
+	cfg := &Config{}
+	cfg.GitLab.ProjectID = "123"
+	assert.Equal(t, "123", cfg.TargetID())
+}
+
+func TestTargetID_Group(t *testing.T) {
+	cfg := &Config{}
+	cfg.GitLab.GroupID = "456"
+	assert.Equal(t, "456", cfg.TargetID())
+}
+
+func TestLoad_GroupID_EnvVar(t *testing.T) {
+	clearGitLabEnv(t)
+	t.Setenv("GITLAB_TOKEN", "mytoken")
+	t.Setenv("GITLAB_GROUP_ID", "88888")
+
+	cfg, err := Load("")
+	require.NoError(t, err)
+
+	assert.Equal(t, "mytoken", cfg.GitLab.Token)
+	assert.Equal(t, "88888", cfg.GitLab.GroupID)
 }
 
 func TestResolveConfigPath_LocalFile(t *testing.T) {
@@ -274,7 +330,7 @@ func TestResolveConfigPath_NoFileFound(t *testing.T) {
 
 func clearGitLabEnv(t *testing.T) {
 	t.Helper()
-	for _, key := range []string{"GITLAB_TOKEN", "GITLAB_PROJECT_ID", "GITLAB_URL"} {
+	for _, key := range []string{"GITLAB_TOKEN", "GITLAB_PROJECT_ID", "GITLAB_GROUP_ID", "GITLAB_URL"} {
 		t.Setenv(key, "") // set to empty so applyEnvVars skips it; t.Setenv restores original on cleanup
 	}
 }

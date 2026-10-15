@@ -15,6 +15,7 @@ type GitLabConfig struct {
 	URL       string `yaml:"url"`
 	Token     string `yaml:"token"`
 	ProjectID string `yaml:"project_id"`
+	GroupID   string `yaml:"group_id"`
 }
 
 // RateLimitConfig holds rate limiting and retry settings.
@@ -70,6 +71,9 @@ func applyEnvVars(cfg *Config) {
 	if v := os.Getenv("GITLAB_PROJECT_ID"); v != "" {
 		cfg.GitLab.ProjectID = v
 	}
+	if v := os.Getenv("GITLAB_GROUP_ID"); v != "" {
+		cfg.GitLab.GroupID = v
+	}
 	if v := os.Getenv("GITLAB_URL"); v != "" {
 		cfg.GitLab.URL = v
 	}
@@ -80,6 +84,7 @@ func expandEnvVars(cfg *Config) {
 	cfg.GitLab.URL = os.ExpandEnv(cfg.GitLab.URL)
 	cfg.GitLab.Token = os.ExpandEnv(cfg.GitLab.Token)
 	cfg.GitLab.ProjectID = os.ExpandEnv(cfg.GitLab.ProjectID)
+	cfg.GitLab.GroupID = os.ExpandEnv(cfg.GitLab.GroupID)
 	for name, envCfg := range cfg.Environments {
 		envCfg.File = os.ExpandEnv(envCfg.File)
 		cfg.Environments[name] = envCfg
@@ -167,8 +172,27 @@ func (c *Config) Validate() error {
 	if c.GitLab.Token == "" {
 		return errors.New("config: gitlab.token is required (set GITLAB_TOKEN or token in config file)")
 	}
-	if c.GitLab.ProjectID == "" {
-		return errors.New("config: gitlab.project_id is required (set GITLAB_PROJECT_ID or project_id in config file)")
+	if c.GitLab.ProjectID == "" && c.GitLab.GroupID == "" {
+		return errors.New("config: one of gitlab.project_id or gitlab.group_id is required (set GITLAB_PROJECT_ID, GITLAB_GROUP_ID, or use config file)")
+	}
+	if c.GitLab.ProjectID != "" && c.GitLab.GroupID != "" {
+		return errors.New("config: only one of gitlab.project_id or gitlab.group_id can be set")
 	}
 	return nil
+}
+
+// TargetType returns "projects" or "groups" based on which ID is configured.
+func (c *Config) TargetType() string {
+	if c.GitLab.GroupID != "" {
+		return "groups"
+	}
+	return "projects"
+}
+
+// TargetID returns the configured project or group ID.
+func (c *Config) TargetID() string {
+	if c.GitLab.GroupID != "" {
+		return c.GitLab.GroupID
+	}
+	return c.GitLab.ProjectID
 }

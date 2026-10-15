@@ -16,39 +16,39 @@ import (
 
 // fakeClient implements the gitlabClient interface for testing.
 type fakeClient struct {
-	createFn func(ctx context.Context, projectID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
-	updateFn func(ctx context.Context, projectID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
-	deleteFn func(ctx context.Context, projectID, key, envScope string) error
+	createFn func(ctx context.Context, targetType, targetID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
+	updateFn func(ctx context.Context, targetType, targetID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
+	deleteFn func(ctx context.Context, targetType, targetID, key, envScope string) error
 	calls    atomic.Int32
 }
 
-func (f *fakeClient) CreateVariable(ctx context.Context, projectID string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+func (f *fakeClient) CreateVariable(ctx context.Context, targetType, targetID string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
 	f.calls.Add(1)
 	if f.createFn != nil {
-		return f.createFn(ctx, projectID, req)
+		return f.createFn(ctx, targetType, targetID, req)
 	}
 	return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
 }
 
-func (f *fakeClient) UpdateVariable(ctx context.Context, projectID string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+func (f *fakeClient) UpdateVariable(ctx context.Context, targetType, targetID string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
 	f.calls.Add(1)
 	if f.updateFn != nil {
-		return f.updateFn(ctx, projectID, req)
+		return f.updateFn(ctx, targetType, targetID, req)
 	}
 	return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
 }
 
-func (f *fakeClient) DeleteVariable(ctx context.Context, projectID, key, envScope string) error {
+func (f *fakeClient) DeleteVariable(ctx context.Context, targetType, targetID, key, envScope string) error {
 	f.calls.Add(1)
 	if f.deleteFn != nil {
-		return f.deleteFn(ctx, projectID, key, envScope)
+		return f.deleteFn(ctx, targetType, targetID, key, envScope)
 	}
 	return nil
 }
 
 func newTestEngine(client gitlabClient, opts Options) *Engine {
 	cl := classifier.New(classifier.Rules{})
-	return NewEngine(client, cl, opts, "proj-1")
+	return NewEngine(client, cl, opts, "projects", "proj-1")
 }
 
 // --- Diff tests ---
@@ -201,7 +201,7 @@ func TestApply_ContextCancel(t *testing.T) {
 	var started atomic.Int32
 
 	fake := &fakeClient{
-		createFn: func(ctx context.Context, _ string, _ gitlab.CreateRequest) (*gitlab.Variable, error) {
+		createFn: func(ctx context.Context, _, _ string, _ gitlab.CreateRequest) (*gitlab.Variable, error) {
 			started.Add(1)
 			<-ctx.Done()
 			return nil, ctx.Err()
@@ -241,7 +241,7 @@ func TestApply_ContextCancel(t *testing.T) {
 func TestApply_ErrorHandling(t *testing.T) {
 	errKey := "BAD_VAR"
 	fake := &fakeClient{
-		createFn: func(ctx context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+		createFn: func(ctx context.Context, _, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
 			if req.Key == errKey {
 				return nil, fmt.Errorf("API error: variable invalid")
 			}
@@ -309,15 +309,15 @@ func TestApplyWithCallback(t *testing.T) {
 func TestApply_CreateUpdateDelete(t *testing.T) {
 	var creates, updates, deletes atomic.Int32
 	fake := &fakeClient{
-		createFn: func(ctx context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+		createFn: func(ctx context.Context, _, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
 			creates.Add(1)
 			return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
 		},
-		updateFn: func(ctx context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+		updateFn: func(ctx context.Context, _, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
 			updates.Add(1)
 			return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
 		},
-		deleteFn: func(ctx context.Context, _ string, key, _ string) error {
+		deleteFn: func(ctx context.Context, _, _, key, _ string) error {
 			deletes.Add(1)
 			return nil
 		},
@@ -390,7 +390,7 @@ func TestDiff_ClassificationProtectedOnly(t *testing.T) {
 	// production env + secret key with short value → protected but not masked
 	// (masked requires value length >= 8; "abc" is 3 chars)
 	cl := classifier.New(classifier.Rules{})
-	engine := NewEngine(&fakeClient{}, cl, Options{}, "proj-1")
+	engine := NewEngine(&fakeClient{}, cl, Options{}, "projects", "proj-1")
 
 	local := []envfile.Variable{{Key: "DB_SECRET", Value: "abc"}}
 	remote := []gitlab.Variable{}
@@ -593,7 +593,7 @@ func TestApply_WildcardScope_UpdatePassesCorrectScope(t *testing.T) {
 	// Using "production" as filter would return 404 because the variable has scope "*".
 	var capturedScope string
 	fake := &fakeClient{
-		updateFn: func(_ context.Context, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
+		updateFn: func(_ context.Context, _, _ string, req gitlab.CreateRequest) (*gitlab.Variable, error) {
 			capturedScope = req.EnvironmentScope
 			return &gitlab.Variable{Key: req.Key, Value: req.Value}, nil
 		},

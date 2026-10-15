@@ -72,9 +72,9 @@ type Options struct {
 // gitlabClient is the subset of the gitlab.Client API used by the engine.
 // It is defined as an interface to allow test fakes.
 type gitlabClient interface {
-	CreateVariable(ctx context.Context, projectID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
-	UpdateVariable(ctx context.Context, projectID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
-	DeleteVariable(ctx context.Context, projectID, key, envScope string) error
+	CreateVariable(ctx context.Context, targetType, targetID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
+	UpdateVariable(ctx context.Context, targetType, targetID string, req gitlab.CreateRequest) (*gitlab.Variable, error)
+	DeleteVariable(ctx context.Context, targetType, targetID, key, envScope string) error
 }
 
 // Engine orchestrates diff and apply operations.
@@ -82,11 +82,12 @@ type Engine struct {
 	client     gitlabClient
 	classifier *classifier.Classifier
 	opts       Options
-	projectID  string
+	targetType string
+	targetID   string
 }
 
 // NewEngine creates a new Engine.
-func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, projectID string) *Engine {
+func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, targetType, targetID string) *Engine {
 	if opts.Workers <= 0 {
 		opts.Workers = 5
 	}
@@ -94,7 +95,8 @@ func NewEngine(client gitlabClient, cl *classifier.Classifier, opts Options, pro
 		client:     client,
 		classifier: cl,
 		opts:       opts,
-		projectID:  projectID,
+		targetType: targetType,
+		targetID:   targetID,
 	}
 }
 
@@ -330,7 +332,7 @@ func (e *Engine) applyOne(ctx context.Context, task Change) Result {
 		if req.VariableType == "" {
 			req.VariableType = "env_var"
 		}
-		_, err := e.client.CreateVariable(ctx, e.projectID, req)
+		_, err := e.client.CreateVariable(ctx, e.targetType, e.targetID, req)
 		if err != nil {
 			return Result{Change: task, Error: fmt.Errorf("create %s: %w", task.Key, err)}
 		}
@@ -352,7 +354,7 @@ func (e *Engine) applyOne(ctx context.Context, task Change) Result {
 		if req.VariableType == "" {
 			req.VariableType = "env_var"
 		}
-		_, err := e.client.UpdateVariable(ctx, e.projectID, req)
+		_, err := e.client.UpdateVariable(ctx, e.targetType, e.targetID, req)
 		if err != nil {
 			return Result{Change: task, Error: fmt.Errorf("update %s: %w", task.Key, err)}
 		}
@@ -362,7 +364,7 @@ func (e *Engine) applyOne(ctx context.Context, task Change) Result {
 		if e.opts.DryRun {
 			return Result{Change: task}
 		}
-		err := e.client.DeleteVariable(ctx, e.projectID, task.Key, task.envScope)
+		err := e.client.DeleteVariable(ctx, e.targetType, e.targetID, task.Key, task.envScope)
 		if err != nil {
 			return Result{Change: task, Error: fmt.Errorf("delete %s: %w", task.Key, err)}
 		}

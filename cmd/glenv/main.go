@@ -44,6 +44,7 @@ type GlobalOptions struct {
 	Config    string  `short:"c" long:"config" description:"Path to .glenv.yml config file"`
 	Token     string  `long:"token" env:"GITLAB_TOKEN" description:"GitLab private token"`
 	Project   string  `long:"project" env:"GITLAB_PROJECT_ID" description:"GitLab project ID"`
+	Group     string  `long:"group" env:"GITLAB_GROUP_ID" description:"GitLab group ID"`
 	URL       string  `long:"url" env:"GITLAB_URL" description:"GitLab base URL"`
 	DryRun    bool    `short:"n" long:"dry-run" description:"Print planned changes without applying them"`
 	NoColor   bool    `long:"no-color" description:"Disable colored output"`
@@ -117,9 +118,9 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 		DryRun:        cmd.global.DryRun,
 		DeleteMissing: cmd.DeleteMissing,
 	}
-	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
+	engine := glsync.NewEngine(client, cl, opts, cfg.TargetType(), cfg.TargetID())
 
-	remote, err := client.ListVariables(appCtx, cfg.GitLab.ProjectID, gitlab.ListOptions{EnvironmentScope: envScope})
+	remote, err := client.ListVariables(appCtx, cfg.TargetType(), cfg.TargetID(), gitlab.ListOptions{EnvironmentScope: envScope})
 	if err != nil {
 		return fmt.Errorf("list remote variables: %w", err)
 	}
@@ -147,7 +148,7 @@ func (cmd *SyncCommand) syncOne(cfg *config.Config, client *gitlab.Client, envFi
 		}
 	}
 
-	fmt.Printf("\nSyncing: %s → project %s (%s)\n", envFile, cfg.GitLab.ProjectID, envScope)
+	fmt.Printf("\nSyncing: %s → %s %s (%s)\n", envFile, cfg.TargetType(), cfg.TargetID(), envScope)
 	fmt.Println(separator)
 	fmt.Println()
 	report := engine.ApplyWithCallback(appCtx, diff, func(r glsync.Result) {
@@ -187,9 +188,9 @@ func (cmd *DiffCommand) Execute(args []string) error {
 		Workers:       resolveWorkers(cmd.global, cfg),
 		DeleteMissing: cmd.DeleteMissing,
 	}
-	engine := glsync.NewEngine(client, cl, opts, cfg.GitLab.ProjectID)
+	engine := glsync.NewEngine(client, cl, opts, cfg.TargetType(), cfg.TargetID())
 
-	remote, err := client.ListVariables(appCtx, cfg.GitLab.ProjectID, gitlab.ListOptions{EnvironmentScope: cmd.Environment})
+	remote, err := client.ListVariables(appCtx, cfg.TargetType(), cfg.TargetID(), gitlab.ListOptions{EnvironmentScope: cmd.Environment})
 	if err != nil {
 		return fmt.Errorf("list remote variables: %w", err)
 	}
@@ -213,7 +214,7 @@ func (cmd *ListCommand) Execute(args []string) error {
 		return err
 	}
 
-	vars, err := client.ListVariables(appCtx, cfg.GitLab.ProjectID, gitlab.ListOptions{EnvironmentScope: cmd.Environment})
+	vars, err := client.ListVariables(appCtx, cfg.TargetType(), cfg.TargetID(), gitlab.ListOptions{EnvironmentScope: cmd.Environment})
 	if err != nil {
 		return fmt.Errorf("list variables: %w", err)
 	}
@@ -255,7 +256,7 @@ func (cmd *ExportCommand) Execute(args []string) error {
 		return err
 	}
 
-	vars, err := client.ListVariables(appCtx, cfg.GitLab.ProjectID, gitlab.ListOptions{EnvironmentScope: cmd.Environment})
+	vars, err := client.ListVariables(appCtx, cfg.TargetType(), cfg.TargetID(), gitlab.ListOptions{EnvironmentScope: cmd.Environment})
 	if err != nil {
 		return fmt.Errorf("list variables: %w", err)
 	}
@@ -344,7 +345,7 @@ func (cmd *DeleteCommand) Execute(args []string) error {
 
 	var failed int
 	for _, key := range args {
-		if err := client.DeleteVariable(appCtx, cfg.GitLab.ProjectID, key, cmd.Environment); err != nil {
+		if err := client.DeleteVariable(appCtx, cfg.TargetType(), cfg.TargetID(), key, cmd.Environment); err != nil {
 			red.Printf("✗ %s: %v\n", key, err)
 			failed++
 		} else {
@@ -397,6 +398,9 @@ func buildClientFromGlobal(global *GlobalOptions) (*config.Config, *gitlab.Clien
 	}
 	if global.Project != "" {
 		cfg.GitLab.ProjectID = global.Project
+	}
+	if global.Group != "" {
+		cfg.GitLab.GroupID = global.Group
 	}
 	if global.URL != "" {
 		cfg.GitLab.URL = global.URL

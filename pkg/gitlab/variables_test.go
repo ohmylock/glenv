@@ -30,7 +30,7 @@ func TestListVariables_SinglePage(t *testing.T) {
 		json.NewEncoder(w).Encode(vars)
 	})
 
-	result, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	result, err := client.ListVariables(context.Background(), "projects", "42", ListOptions{})
 	require.NoError(t, err)
 	require.Len(t, result, 3)
 	assert.Equal(t, "FOO", result[0].Key)
@@ -62,7 +62,7 @@ func TestListVariables_MultiPage(t *testing.T) {
 		}
 	})
 
-	result, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	result, err := client.ListVariables(context.Background(), "projects", "42", ListOptions{})
 	require.NoError(t, err)
 	require.Len(t, result, 3)
 	assert.Equal(t, "VAR1", result[0].Key)
@@ -78,7 +78,7 @@ func TestListVariables_Empty(t *testing.T) {
 		json.NewEncoder(w).Encode([]Variable{})
 	})
 
-	result, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	result, err := client.ListVariables(context.Background(), "projects", "42", ListOptions{})
 	require.NoError(t, err)
 	assert.Empty(t, result)
 }
@@ -93,7 +93,7 @@ func TestListVariables_EnvScope(t *testing.T) {
 		json.NewEncoder(w).Encode([]Variable{})
 	})
 
-	_, err := client.ListVariables(context.Background(), "42", ListOptions{EnvironmentScope: "production"})
+	_, err := client.ListVariables(context.Background(), "projects", "42", ListOptions{EnvironmentScope: "production"})
 	require.NoError(t, err)
 	assert.Equal(t, "production", receivedScope)
 }
@@ -132,7 +132,7 @@ func TestCreateVariable(t *testing.T) {
 		json.NewEncoder(w).Encode(created)
 	})
 
-	result, err := client.CreateVariable(context.Background(), "99", req)
+	result, err := client.CreateVariable(context.Background(), "projects", "99", req)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "NEW_VAR", result.Key)
@@ -164,7 +164,7 @@ func TestUpdateVariable(t *testing.T) {
 		json.NewEncoder(w).Encode(updated)
 	})
 
-	result, err := client.UpdateVariable(context.Background(), "10", req)
+	result, err := client.UpdateVariable(context.Background(), "projects", "10", req)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "EXISTING", result.Key)
@@ -178,7 +178,7 @@ func TestDeleteVariable(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := client.DeleteVariable(context.Background(), "7", "MY_VAR", "")
+	err := client.DeleteVariable(context.Background(), "projects", "7", "MY_VAR", "")
 	require.NoError(t, err)
 }
 
@@ -190,7 +190,7 @@ func TestDeleteVariable_WithScope(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := client.DeleteVariable(context.Background(), "7", "MY_VAR", "production")
+	err := client.DeleteVariable(context.Background(), "projects", "7", "MY_VAR", "production")
 	require.NoError(t, err)
 	assert.Equal(t, "production", receivedScope)
 }
@@ -202,7 +202,7 @@ func TestCreateVariable_Error(t *testing.T) {
 		fmt.Fprint(w, `{"message":"409 Variable already exists"}`)
 	})
 
-	_, err := client.CreateVariable(context.Background(), "99", CreateRequest{Key: "DUP"})
+	_, err := client.CreateVariable(context.Background(), "projects", "99", CreateRequest{Key: "DUP"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "409")
 }
@@ -214,7 +214,7 @@ func TestUpdateVariable_Error(t *testing.T) {
 		fmt.Fprint(w, `{"message":"404 Variable Not Found"}`)
 	})
 
-	_, err := client.UpdateVariable(context.Background(), "10", CreateRequest{Key: "MISSING"})
+	_, err := client.UpdateVariable(context.Background(), "projects", "10", CreateRequest{Key: "MISSING"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "404")
 }
@@ -226,7 +226,7 @@ func TestDeleteVariable_UnexpectedStatus(t *testing.T) {
 		fmt.Fprint(w, `{"message":"500 Internal Server Error"}`)
 	})
 
-	err := client.DeleteVariable(context.Background(), "7", "MY_VAR", "")
+	err := client.DeleteVariable(context.Background(), "projects", "7", "MY_VAR", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
@@ -288,7 +288,7 @@ func TestListVariables_URLEncoding(t *testing.T) {
 		json.NewEncoder(w).Encode([]Variable{})
 	})
 
-	_, err := client.ListVariables(context.Background(), "1", ListOptions{EnvironmentScope: "staging"})
+	_, err := client.ListVariables(context.Background(), "projects", "1", ListOptions{EnvironmentScope: "staging"})
 	require.NoError(t, err)
 
 	parsed, err := url.ParseQuery(rawQuery)
@@ -303,7 +303,7 @@ func TestListVariables_DecodeError(t *testing.T) {
 		fmt.Fprint(w, `[bad json`)
 	})
 
-	_, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	_, err := client.ListVariables(context.Background(), "projects", "42", ListOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode")
 }
@@ -315,7 +315,7 @@ func TestCreateVariable_DecodeError(t *testing.T) {
 		fmt.Fprint(w, `not-json{`)
 	})
 
-	_, err := client.CreateVariable(context.Background(), "99", CreateRequest{Key: "X"})
+	_, err := client.CreateVariable(context.Background(), "projects", "99", CreateRequest{Key: "X"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode")
 }
@@ -327,7 +327,7 @@ func TestUpdateVariable_DecodeError(t *testing.T) {
 		fmt.Fprint(w, `garbage`)
 	})
 
-	_, err := client.UpdateVariable(context.Background(), "10", CreateRequest{Key: "X"})
+	_, err := client.UpdateVariable(context.Background(), "projects", "10", CreateRequest{Key: "X"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode")
 }
@@ -343,7 +343,7 @@ func TestListVariables_NextPage_Zero(t *testing.T) {
 		json.NewEncoder(w).Encode([]Variable{{Key: "A", EnvironmentScope: "*"}})
 	})
 
-	vars, err := client.ListVariables(context.Background(), "42", ListOptions{})
+	vars, err := client.ListVariables(context.Background(), "projects", "42", ListOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, int32(1), callCount, "pagination should stop when X-Next-Page is 0")
 	require.Len(t, vars, 1)

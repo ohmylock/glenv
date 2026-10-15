@@ -68,6 +68,48 @@ glenv sync \
   -e production
 ```
 
+### Group-Level Variables
+
+Sync variables at the GitLab group level (shared across all projects in the group):
+
+Config file `.glenv.yml`:
+
+```yaml
+gitlab:
+  token: ${GITLAB_TOKEN}
+  group_id: "9876"           # Group ID instead of project_id
+
+environments:
+  production:
+    file: deploy/.env.production
+    protected: true
+```
+
+```bash
+# Sync to group
+glenv sync --all
+
+# Or sync without config file
+export GITLAB_TOKEN="glpat-xxxxxxxxxxxx"
+
+glenv sync \
+  --group 9876 \
+  -f .env.production \
+  -e production
+
+# List group variables
+glenv list --group 9876
+
+# Export group variables
+glenv export --group 9876 -o group-vars.env
+
+# Preview changes to group
+glenv diff --group 9876 -f .env.production
+
+# Delete from group
+glenv delete --group 9876 --key OLD_SECRET
+```
+
 ## Common Scenarios
 
 ### Initial Import of All Variables
