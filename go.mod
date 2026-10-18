@@ -1,12 +1,12 @@
 module github.com/ohmylock/glenv
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/fatih/color v1.18.0
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/time v0.14.0
+	golang.org/x/time v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
